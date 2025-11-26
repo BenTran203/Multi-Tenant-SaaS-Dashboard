@@ -1,10 +1,13 @@
 /**
- * GLOBAL STYLES
+ * 🌿 NATURE CHAT - GLOBAL STYLES
  * 
  * LEARNING: Tailwind CSS directives
- * - @tailwind base: Resets and base styles
- * - @tailwind components: Component classes
- * - @tailwind utilities: Utility classes
+ * - @tailwind base: Browser resets and base element styles
+ * - @tailwind components: Reusable component class definitions
+ * - @tailwind utilities: Utility classes for styling (like bg-grass-500)
+ * 
+ * WHY?: Separating these layers helps organize your styles and allows
+ * Tailwind to optimize and tree-shake unused CSS in production.
  */
 
 @tailwind base;
@@ -12,94 +15,185 @@
 @tailwind utilities;
 
 /**
- * LEARNING: Custom scrollbar styles for dark theme
+ * 📜 CUSTOM SCROLLBAR STYLES
+ * 
+ * LEARNING: We customize scrollbars to match our nature theme
+ * - scrollbar-width: For Firefox
+ * - ::-webkit-scrollbar: For Chrome, Safari, Edge
+ * 
+ * WHY?: Default scrollbars look out of place in custom-themed apps.
+ * Custom scrollbars improve the overall aesthetic consistency.
  */
 @layer base {
+  /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #4c1d95 #1a1a2e;
+    scrollbar-color: #22c55e #e8e4df; /* grass green thumb, stone track */
+  }
+  
+  /* Dark mode Firefox scrollbar */
+  .dark * {
+    scrollbar-color: #22c55e #2f2d2a;
   }
 
+  /* Chrome/Safari/Edge scrollbar */
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   *::-webkit-scrollbar-track {
-    background: #1a1a2e;
+    @apply bg-nature-stone dark:bg-dark-surface rounded-full;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: #4c1d95;
-    border-radius: 4px;
+    @apply bg-grass-500 rounded-full;
+    transition: background-color 0.2s;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #6d28d9;
+    @apply bg-grass-600;
   }
 
-  /* Custom selection color */
+  /* Custom text selection color */
   ::selection {
-    background-color: #8b5cf6;
-    color: white;
+    @apply bg-grass-400 text-white;
   }
 }
 
 /**
- * LEARNING: Base styles
+ * 🎨 BASE ELEMENT STYLES
+ * 
+ * LEARNING: These styles apply to the entire app
+ * - Light mode: cream background with dark text
+ * - Dark mode: dark brown-black background with light text
+ * - font-sans: Uses Inter font (clean, readable)
+ * - antialiased: Makes fonts look smoother
  */
 @layer base {
+  /* Body base styles - changes based on light/dark mode */
   body {
-    @apply bg-dark-bg text-white antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    @apply bg-nature-cream text-nature-soil font-sans antialiased;
+    @apply dark:bg-dark-bg dark:text-nature-cream;
+    @apply transition-colors duration-300;
   }
 
+  /* Input and textarea styling */
   input, textarea {
-    @apply text-white;
+    @apply text-nature-soil dark:text-nature-cream;
+    @apply bg-white dark:bg-dark-surface;
   }
 
+  /* Placeholder text color */
   input::placeholder, textarea::placeholder {
-    @apply text-gray-500;
+    @apply text-nature-bark/50 dark:text-nature-stone;
+  }
+  
+  /* Headings get the pixel font */
+  h1, h2, h3 {
+    @apply font-pixel;
   }
 }
 
 /**
- * LEARNING: Custom animations
+ * 🎪 REUSABLE COMPONENT STYLES
+ * 
+ * LEARNING: @layer components lets you create reusable class combinations
+ * that can be used throughout your app instead of repeating the same
+ * Tailwind classes everywhere.
+ * 
+ * WHY?: Keeps your JSX cleaner and makes styling changes easier.
+ * Change it once here, updates everywhere!
+ */
+@layer components {
+  /* Primary button - grass green, bouncy animation */
+  .btn-primary {
+    @apply px-6 py-3 bg-grass-500 text-white font-pixel text-sm rounded-2xl;
+    @apply hover:bg-grass-600 active:scale-95;
+    @apply transition-all duration-200;
+    @apply shadow-lg hover:shadow-xl;
+    @apply dark:shadow-grass-500/20;
+  }
+  
+  /* Secondary button - oak brown */
+  .btn-secondary {
+    @apply px-6 py-3 bg-oak-600 text-white font-pixel text-sm rounded-2xl;
+    @apply hover:bg-oak-700 active:scale-95;
+    @apply transition-all duration-200;
+    @apply shadow-lg hover:shadow-xl;
+  }
+  
+  /* Outline button - for less important actions */
+  .btn-outline {
+    @apply px-6 py-3 bg-transparent border-2 border-grass-500 text-grass-600 font-pixel text-sm rounded-2xl;
+    @apply hover:bg-grass-50 active:scale-95;
+    @apply dark:text-grass-400 dark:hover:bg-grass-500/10;
+    @apply transition-all duration-200;
+  }
+  
+  /* Input fields with nature styling */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-2xl font-sans;
+    @apply bg-white border-2 border-nature-stone text-nature-soil;
+    @apply focus:outline-none focus:border-grass-500 focus:ring-2 focus:ring-grass-200;
+    @apply dark:bg-dark-surface dark:border-dark-border dark:text-nature-cream;
+    @apply dark:focus:border-grass-500 dark:focus:ring-grass-500/20;
+    @apply transition-all duration-200;
+    @apply placeholder:text-nature-bark/40 dark:placeholder:text-nature-stone;
+  }
+  
+  /* Card container - elevated surface */
+  .card {
+    @apply bg-white rounded-3xl shadow-lg p-6;
+    @apply dark:bg-dark-surface dark:shadow-xl dark:shadow-black/20;
+    @apply border border-nature-stone dark:border-dark-border;
+    @apply transition-all duration-300;
+  }
+  
+  /* Card with hover effect */
+  .card-hover {
+    @apply card hover:shadow-xl hover:-translate-y-1;
+    @apply dark:hover:shadow-2xl;
+    @apply cursor-pointer;
+  }
+  
+  /* Message bubble (flat card style) */
+  .message-card {
+    @apply bg-nature-sand rounded-2xl p-4 shadow-sm;
+    @apply dark:bg-dark-elevated;
+    @apply hover:shadow-md transition-all duration-200;
+    @apply border-l-4 border-grass-500;
+  }
+}
+
+/**
+ * 🎬 CUSTOM UTILITY CLASSES
+ * 
+ * LEARNING: Add extra utility classes for special animations
+ * and effects that Tailwind doesn't provide by default.
  */
 @layer utilities {
-  @keyframes slideIn {
-    from {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
+  /* Smooth bounce animation on hover */
+  .hover-bounce {
+    @apply transition-transform duration-200;
   }
-
-  .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
+  
+  .hover-bounce:hover {
+    animation: bounce-gentle 0.6s ease-in-out;
+  }
+  
+  /* Text gradient effect for special headings */
+  .text-gradient-nature {
+    background: linear-gradient(135deg, #22c55e 0%, #a1665e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Glassmorphism effect (subtle) */
+  .glass {
+    @apply backdrop-blur-sm bg-white/80 dark:bg-dark-surface/80;
+    @apply border border-nature-stone/50 dark:border-dark-border/50;
   }
 }
-
-/**
- * TODO (LEARNING): Add custom components
- * 
- * CHALLENGE: Create reusable component styles
- * 
- * Example:
- * @layer components {
- *   .btn-primary {
- *     @apply px-4 py-2 bg-primary-500 text-white rounded-lg;
- *     @apply hover:bg-primary-600 transition-colors;
- *   }
- *   
- *   .card {
- *     @apply bg-dark-surface rounded-lg shadow-xl p-6;
- *   }
- * }
- */
 

@@ -1,33 +1,38 @@
 /**
- * TypeScript Type Definitions
+ * 🌿 TYPESCRIPT TYPE DEFINITIONS
  * 
  * LEARNING: TypeScript helps catch errors at compile-time
  * Instead of: const user = { id: 1, name: "John" } (JavaScript)
- * We use: const user: User = { id: "uuid", username: "John" } (TypeScript)
+ * We use: const user: User = { id: 1, username: "John" } (TypeScript)
  * 
  * BENEFITS:
- * - Auto-completion in your editor
+ * - Auto-completion in your editor (IntelliSense)
  * - Catch type errors before runtime
- * - Better documentation
- * - Easier refactoring
+ * - Better documentation (types are self-documenting)
+ * - Easier refactoring (find all usages)
+ * 
+ * WHY?: Backend uses numeric IDs (PostgreSQL auto-increment)
+ * So our frontend types match the backend response structure.
  */
+
+/// <reference types="vite/client" />
 
 // ============================================
 // USER TYPES
 // ============================================
 
 export interface User {
-  id: string;
+  id: number;               // Numeric ID from database
   email: string;
   username: string;
-  avatarUrl: string | null;
-  createdAt: string;
+  password?: string;        // Optional, never sent from backend
+  createdAt: string;        // ISO date string
 }
 
 export interface AuthResponse {
-  token: string;
-  user: User;
-  message: string;
+  token: string;            // JWT token for authentication
+  user: User;               // User data
+  message: string;          // Success message
 }
 
 // ============================================
@@ -35,28 +40,13 @@ export interface AuthResponse {
 // ============================================
 
 export interface Server {
-  id: string;
+  id: number;
   name: string;
-  iconUrl: string | null;
-  inviteCode: string;
-  ownerId: string;
+  icon?: string;            // Emoji or URL
+  inviteCode: string;       // Unique code for joining
+  ownerId: number;
   createdAt: string;
-  updatedAt: string;
-}
-
-export interface ServerWithDetails extends Server {
-  owner: User;
-  channels: Channel[];
-  members: ServerMember[];
-}
-
-export interface ServerMember {
-  id: string;
-  role: 'ADMIN' | 'MEMBER';
-  userId: string;
-  serverId: string;
-  joinedAt: string;
-  user?: User; // Optional, included when fetching members
+  server?: { name: string }; // Sometimes backend includes this
 }
 
 // ============================================
@@ -64,13 +54,12 @@ export interface ServerMember {
 // ============================================
 
 export interface Channel {
-  id: string;
+  id: number;
   name: string;
-  type: 'TEXT' | 'VOICE';
-  serverId: string;
-  position: number;
+  type: string;             // 'text' or 'voice'
+  serverId: number;
   createdAt: string;
-  updatedAt: string;
+  server?: Server;          // Optional, included in some responses
 }
 
 // ============================================
@@ -78,46 +67,33 @@ export interface Channel {
 // ============================================
 
 export interface Message {
-  id: string;
+  id: number;
   content: string;
-  userId: string;
-  channelId: string;
+  userId: number;
+  channelId: number;
   createdAt: string;
-  updatedAt: string;
-  deleted: boolean;
-  user: User;
-}
-
-export interface MessageResponse {
-  messages: Message[];
-  hasMore: boolean;
+  user?: User;              // Included with message responses
 }
 
 // ============================================
-// SOCKET EVENT TYPES
+// FORM DATA TYPES
 // ============================================
 
 /**
- * LEARNING: Socket.io events are typed too!
- * This helps ensure we send/receive the correct data
+ * LEARNING: Form data types
+ * Used for form state management and validation
  */
 
-// Events the client SENDS to the server
-export interface ClientToServerEvents {
-  'join-channel': (data: { channelId: string }) => void;
-  'leave-channel': (data: { channelId: string }) => void;
-  'send-message': (data: { channelId: string; content: string }) => void;
-  'typing-start': (data: { channelId: string }) => void;
-  'typing-stop': (data: { channelId: string }) => void;
+export interface LoginFormData {
+  email: string;
+  password: string;
 }
 
-// Events the client RECEIVES from the server
-export interface ServerToClientEvents {
-  'new-message': (data: { message: Message }) => void;
-  'user-joined': (data: { user: User; channelId: string }) => void;
-  'user-typing': (data: { user: User; channelId: string }) => void;
-  'user-stopped-typing': (data: { userId: string; channelId: string }) => void;
-  'error': (data: { message: string }) => void;
+export interface RegisterFormData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
 // ============================================
@@ -125,17 +101,16 @@ export interface ServerToClientEvents {
 // ============================================
 
 export interface ApiError {
-  error: string;
+  message: string;
+  error?: string;
   details?: string;
 }
 
-/**
- * LEARNING: Generic wrapper for API responses
- * Makes it easy to handle loading/error states
- */
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  loading: boolean;
+export interface ImportMetaEnv {
+  readonly VITE_API_URL: string
+  readonly VITE_SOCKET_URL: string
+  //More vite api here for type safety
 }
-
+export interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

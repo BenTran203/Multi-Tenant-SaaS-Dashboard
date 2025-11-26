@@ -1,153 +1,121 @@
 /**
- * SOCKET.IO SERVICE
+ * 🔌 SOCKET.IO SERVICE - Real-Time Communication
  * 
  * LEARNING: This manages the WebSocket connection for real-time features
  * 
- * WHY SEPARATE FROM API?
- * - HTTP (REST): Request-response, one-time communication
- * - WebSocket: Persistent connection, bidirectional, real-time
+ * HTTP vs WebSocket:
+ * - HTTP (REST): Request → Response (one-time)
+ * - WebSocket: Persistent connection (two-way, real-time)
  * 
  * WHEN TO USE SOCKET.IO VS REST API?
- * - Socket.io: Real-time messages, typing indicators, presence
- * - REST API: Initial data loading, user management, server CRUD
+ * - Socket.io: Real-time messages, typing indicators, user presence
+ * - REST API: Initial data loading, user management, server/channel CRUD
+ * 
+ * FLOW:
+ * 1. User logs in → Create socket connection with JWT token
+ * 2. User joins channel → Emit 'joinChannel' event
+ * 3. User sends message → Backend broadcasts to all in channel
+ * 4. Other users receive message instantly via 'newMessage' event
  */
 
 import { io, Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ServerToClientEvents } from '../types';
-
-// LEARNING: Type-safe socket
-type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
-
-let socket: TypedSocket | null = null;
 
 /**
- * Initialize Socket.io connection
+ * LEARNING: Socket.io Instance
  * 
- * LEARNING: This should be called after user logs in
- * The token is required for authentication
+ * - Initialized when user logs in
+ * - Stays connected throughout session
+ * - Auto-reconnects if connection drops
  */
-export const initializeSocket = (token: string): TypedSocket => {
-  // LEARNING: If socket already exists, return it
-  if (socket && socket.connected) {
-    return socket;
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// LEARNING: Create socket instance
+// - Don't auto-connect (we'll connect manually after login)
+// - This is exported so components can use it directly
+export const socket: Socket = io(SOCKET_URL, {
+  autoConnect: false  // Wait for explicit .connect() call
+});
+
+/**
+ * INITIALIZE SOCKET CONNECTION
+ * 
+ * Called after user logs in with their JWT token
+ * 
+ * @param token - JWT token for authentication
+ */
+export const initSocket = (token: string): void => {
+  // Set auth token
+  socket.auth = { token };
+  
+  // Connect if not already connected
+  if (!socket.connected) {
+    socket.connect();
   }
 
-  const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  // LEARNING: Connect to Socket.io server with authentication
-  socket = io(SOCKET_URL, {
-    auth: {
-      token // This is sent to the server for authentication
-    },
-    autoConnect: true // Automatically connect on creation
-  });
-
-  // LEARNING: Connection event listeners
+  // LEARNING: Event Listeners for Connection Status
   socket.on('connect', () => {
-    console.log('✅ Socket connected:', socket?.id);
+    console.log('🌿 Socket connected:', socket.id);
   });
 
   socket.on('disconnect', (reason) => {
     console.log('❌ Socket disconnected:', reason);
-    
-    // LEARNING: Try to reconnect if disconnected unexpectedly
-    if (reason === 'io server disconnect') {
-      // Server disconnected, manually reconnect
-      socket?.connect();
-    }
   });
 
   socket.on('connect_error', (error) => {
-    console.error('❌ Socket connection error:', error.message);
+    console.error('❌ Socket error:', error.message);
   });
-
-  return socket;
 };
 
 /**
- * Get the current socket instance
- */
-export const getSocket = (): TypedSocket | null => {
-  return socket;
-};
-
-/**
- * Disconnect socket
+ * DISCONNECT SOCKET
  * 
- * LEARNING: Call this when user logs out
+ * Called when user logs out
  */
 export const disconnectSocket = (): void => {
-  if (socket) {
+  if (socket.connected) {
     socket.disconnect();
-    socket = null;
   }
 };
 
 /**
- * TODO (LEARNING): Create a custom hook for socket events
+ * HOW TO USE IN COMPONENTS:
  * 
- * CHALLENGE: Create a React hook that listens to socket events
- * 
- * EXAMPLE USAGE:
- * const useSocketEvent = (event: string, callback: Function) => {
- *   useEffect(() => {
- *     const socket = getSocket();
- *     if (socket) {
- *       socket.on(event, callback);
- *       return () => {
- *         socket.off(event, callback);
- *       };
- *     }
- *   }, [event, callback]);
- * };
- * 
- * // In component:
- * useSocketEvent('new-message', (data) => {
- *   console.log('New message:', data);
- * });
- */
-
-/**
- * LEARNING: Socket.io usage example in a React component:
- * 
- * import { useEffect } from 'react';
- * import { initializeSocket, getSocket } from './services/socket';
+ * EXAMPLE: Chat Component with Real-Time Messages
+ * ```typescript
+ * import { useEffect, useState } from 'react';
+ * import { socket } from '../services/socket';
  * 
  * function ChatComponent({ channelId }) {
+ *   const [messages, setMessages] = useState([]);
+ * 
  *   useEffect(() => {
- *     const token = localStorage.getItem('token');
- *     if (!token) return;
- *     
- *     // Initialize socket
- *     const socket = initializeSocket(token);
- *     
- *     // Join channel
- *     socket.emit('join-channel', { channelId });
- *     
+ *     // Join the channel room
+ *     socket.emit('joinChannel', channelId);
+ * 
  *     // Listen for new messages
- *     const handleNewMessage = (data) => {
- *       console.log('New message:', data.message);
- *       // Update state to show message
+ *     const handleNewMessage = (message) => {
+ *       setMessages(prev => [...prev, message]);
  *     };
- *     
- *     socket.on('new-message', handleNewMessage);
- *     
- *     // Cleanup
+ * 
+ *     socket.on('newMessage', handleNewMessage);
+ * 
+ *     // Cleanup: Leave room and remove listener
  *     return () => {
- *       socket.emit('leave-channel', { channelId });
- *       socket.off('new-message', handleNewMessage);
+ *       socket.emit('leaveChannel', channelId);
+ *       socket.off('newMessage', handleNewMessage);
  *     };
  *   }, [channelId]);
- *   
- *   // Send message
- *   const sendMessage = (content) => {
- *     const socket = getSocket();
- *     if (socket) {
- *       socket.emit('send-message', { channelId, content });
- *     }
- *   };
- *   
- *   return <div>...</div>;
- * }
- */
+ * 
+ *   return <div>  //Render message
+//  </div>;
+//  * }
+//  * ```
+//  * 
+//  * KEY SOCKET EVENTS (based on your backend):
+//  * - 'joinChannel': Join a channel room
+//  * - 'leaveChannel': Leave a channel room
+//  * - 'newMessage': Receive new message (broadcast from server)
+//  * - 'typing': User started typing
+//  * - 'stopTyping': User stopped typing
+//  */
 

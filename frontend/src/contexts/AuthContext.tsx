@@ -1,5 +1,5 @@
 /**
- * AUTHENTICATION CONTEXT
+ * 🔐 AUTHENTICATION CONTEXT - User State Management
  * 
  * LEARNING: React Context provides a way to share data across components
  * without passing props down manually at every level ("prop drilling")
@@ -8,85 +8,100 @@
  * - User info needed in many components (Navbar, Chat, Profile, etc.)
  * - Auth state needs to be consistent across the app
  * - Centralized authentication logic
+ * - One place to handle login/logout
  * 
- * LEARNING RESOURCES:
- * - https://react.dev/learn/passing-data-deeply-with-context
- * - https://react.dev/reference/react/useContext
+ * PATTERN:
+ * 1. Create Context → 2. Create Provider → 3. Create Hook → 4. Use in components
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi } from '../services/api';
-import { initializeSocket, disconnectSocket } from '../services/socket';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '../services/api';
+import { initSocket, disconnectSocket } from '../services/socket';
 import type { User } from '../types';
 
 /**
- * LEARNING: Define the shape of our context data
+ * LEARNING: TypeScript Interface
+ * 
+ * Defines what data and functions the context provides
  */
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  loading: boolean;
+  user: User | null;              // Current logged-in user (null if not logged in)
+  loading: boolean;               // True while checking if user is logged in
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 /**
- * LEARNING: Create the context
- * The "undefined!" is a TypeScript trick to avoid null checks everywhere
- * We'll always wrap our app in AuthProvider, so context will always exist
+ * LEARNING: Create Context
+ * 
+ * Creates a "container" for our auth data
+ * - undefined as default (will be provided by AuthProvider)
  */
-const AuthContext = createContext<AuthContextType>(undefined!);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * LEARNING: Custom hook to use auth context
- * This is a common pattern - provides better error messages
+ * CUSTOM HOOK: useAuth()
+ * 
+ * LEARNING: Custom hooks simplify using context
+ * Instead of useContext(AuthContext), just call useAuth()
+ * 
+ * @returns Auth context value
+ * @throws Error if used outside AuthProvider
  */
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
-};
+}
 
 /**
- * AuthProvider component
+ * AUTH PROVIDER COMPONENT
  * 
- * LEARNING: This wraps your app and provides auth state to all children
+ * LEARNING: This wraps your entire app and provides auth state to all children
+ * 
+ * @param children - All app components
  */
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   /**
-   * LEARNING: useEffect runs after component mounts
-   * This checks if user is already logged in (token in localStorage)
+   * LEARNING: useEffect with empty dependency array []
+   * 
+   * Runs once when component mounts
+   * - Check if user is already logged in (token in localStorage)
+   * - Restore user session
    */
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('chatwave-token');
+      const storedUser = localStorage.getItem('chatwave-user');
 
       if (storedToken && storedUser) {
         try {
-          setToken(storedToken);
+          // Parse stored user
           setUser(JSON.parse(storedUser));
           
-          // LEARNING: Initialize Socket.io connection
-          initializeSocket(storedToken);
+          // Initialize Socket.io connection
+          initSocket(storedToken);
           
           // Optional: Verify token is still valid
-          const { user: currentUser } = await authApi.getCurrentUser();
-          setUser(currentUser);
-          localStorage.setItem('user', JSON.stringify(currentUser));
+          try {
+            const response = await api.get('/api/auth/me');
+            setUser(response.data.user);
+            localStorage.setItem('chatwave-user', JSON.stringify(response.data.user));
+          } catch (verifyError) {
+            // Token invalid, will be caught below
+            throw verifyError;
+          }
         } catch (error) {
           // Token is invalid, clear storage
           console.error('Token validation failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setToken(null);
+          localStorage.removeItem('chatwave-token');
+          localStorage.removeItem('chatwave-user');
           setUser(null);
         }
       }
@@ -98,84 +113,80 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   /**
-   * Login function
+   * LOGIN FUNCTION
    * 
-   * LEARNING: This is called from the login form
-   * It makes an API call, saves the token, and updates state
+   * LEARNING: Async function that returns a Promise
+   * - Makes POST request to /api/auth/login
+   * - Saves token and user to localStorage
+   * - Updates state to trigger re-render
+   * - Initializes Socket.io
+   * 
+   * @param email - User's email
+   * @param password - User's password
    */
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authApi.login({ email, password });
-      
-      // LEARNING: Save to localStorage (persists across browser sessions)
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // LEARNING: Update state (triggers re-render)
-      setToken(response.token);
-      setUser(response.user);
-      
-      // LEARNING: Initialize Socket.io connection
-      initializeSocket(response.token);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Login failed');
-    }
+    const response = await api.post('/api/auth/login', { email, password });
+    
+    // Save to localStorage (persists between sessions)
+    localStorage.setItem('chatwave-token', response.data.token);
+    localStorage.setItem('chatwave-user', JSON.stringify(response.data.user));
+    
+    // Update state (triggers re-render)
+    setUser(response.data.user);
+    
+    // Initialize real-time connection
+    initSocket(response.data.token);
   };
 
   /**
-   * Register function
+   * REGISTER FUNCTION
+   * 
+   * Similar to login but creates new user account
+   * 
+   * @param username - Desired username
+   * @param email - User's email
+   * @param password - User's password
    */
-  const register = async (email: string, username: string, password: string) => {
-    try {
-      const response = await authApi.register({ email, username, password });
-      
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      setToken(response.token);
-      setUser(response.user);
-      
-      initializeSocket(response.token);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
-    }
+  const register = async (username: string, email: string, password: string) => {
+    const response = await api.post('/api/auth/register', { 
+      username, 
+      email, 
+      password 
+    });
+    
+    localStorage.setItem('chatwave-token', response.data.token);
+    localStorage.setItem('chatwave-user', JSON.stringify(response.data.user));
+    
+    setUser(response.data.user);
+    
+    initSocket(response.data.token);
   };
 
   /**
-   * Logout function
+   * LOGOUT FUNCTION
+   * 
+   * LEARNING: Cleanup on logout
+   * - Clear localStorage
+   * - Clear state
+   * - Disconnect Socket.io
+   * - Redirect happens automatically (via response interceptor)
    */
   const logout = () => {
-    // LEARNING: Clear everything
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
+    localStorage.removeItem('chatwave-token');
+    localStorage.removeItem('chatwave-user');
     setUser(null);
-    
-    // LEARNING: Disconnect Socket.io
     disconnectSocket();
+    
+    // Redirect to login
+    window.location.href = '/login';
   };
 
-  /**
-   * LEARNING: The value object contains all data/functions we want to share
-   */
-  const value: AuthContextType = {
-    user,
-    token,
-    loading,
-    login,
-    register,
-    logout
-  };
-
-  /**
-   * LEARNING: Provider wraps children and provides the value
-   */
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 /**
  * LEARNING: How to use this context in components:
