@@ -103,7 +103,12 @@ export const createServerValidation = [
   body('name')
     .trim()
     .isLength({ min: 1, max: 50 })
-    .withMessage('Server name must be between 1 and 50 characters')
+    .withMessage('Server name must be between 1 and 50 characters'),
+
+  body('icon')
+    .optional() 
+    .isString()
+    .withMessage('Icon must be a string')
 ];
 
 /**
