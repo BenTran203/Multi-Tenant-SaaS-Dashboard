@@ -12,60 +12,28 @@
  */
 
 import express from 'express';
-import { createServer } from 'http';
-import { createServer as createHttpsServer } from 'https';
+import { createWebServer } from './utils/serverFactory.js'; // Import the helper
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
-
-// Load environment variables from .env file
-dotenv.config();
-
-// Import configuration
 import { prisma } from './config/database.js';
-
-// Import routes
-import authRoutes from './routes/authRoutes.js';
+import authRoutes from './routes/authRoutes.js'; // Import routes
 import serverRoutes from './routes/serverRoutes.js';
 import channelRoutes from './routes/channelRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
-
-// Import middleware
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-
-// Import socket handlers
-import { setupSocketHandlers, setupPresenceHandlers } from './socket/socketHandlers.js';
-
-// ============================================
-// APP INITIALIZATION
-// ============================================
-
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';// Import middleware
+import { setupSocketHandlers, setupPresenceHandlers } from './socket/socketHandlers.js'; // Import socket handlers
+dotenv.config();
 const app = express();
+// HTTPS Support 
+const httpServer = createWebServer(app);
 
-// HTTPS Support (Optional - for production or testing)
-let httpServer;
-
-if (process.env.NODE_ENV === 'production' || process.env.USE_HTTPS === 'true') {
-  try {
-    const httpsOptions = {
-      key: fs.readFileSync(path.join(process.cwd(), 'certs', 'key.pem')),
-      cert: fs.readFileSync(path.join(process.cwd(), 'certs', 'cert.pem'))
-    };
-    httpServer = createHttpsServer(httpsOptions, app);
-    console.log('HTTPS server created');
-  } catch (error) {
-    console.error('HTTPS certificates not found, using HTTP instead');
-    httpServer = createServer(app);
-  }
-} else {
-  httpServer = createServer(app);
-  console.log('🌐 HTTP server created (development mode)');
-}
-
-// Socket.io Server
+// ============================================
+// Socket .io
+// ============================================
 console.log('Creating Socket.io server...');
 const io = new Server(httpServer, {
   cors: {
@@ -254,9 +222,6 @@ startServer();
 /**
  * 🔨 TASKS TO IMPLEMENT:
  * 
- * 1. Rate Limiting on Auth Routes
- *    - Apply limiter to /api/auth routes to prevent brute force
- *    - See middleware section for hint
  * 
  * 2. Add More Features (See .github/copilot-instructions.md)
  *    - Typing indicators

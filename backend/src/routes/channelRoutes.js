@@ -1,5 +1,12 @@
 /**
+ * ============================================================================
  * CHANNEL ROUTES
+ * ============================================================================
+ * 
+ * CONCEPT: Nested Resources
+ * Channels belong to Servers.
+ * - Create: POST /api/servers/:serverId/channels
+ * - List:   GET  /api/servers/:serverId/channels
  */
 
 import express from 'express';

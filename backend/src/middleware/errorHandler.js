@@ -1,32 +1,28 @@
 /**
+ * ============================================================================
  * ERROR HANDLING MIDDLEWARE
+ * ============================================================================
  * 
- * LEARNING: This is a special middleware that catches errors from anywhere in your app
- * It must have 4 parameters: (err, req, res, next)
+ * CONCEPT: Centralized Error Handling
+ * Instead of writing `try/catch` and `res.status(500)` in every single route,
+ * we let errors "bubble up" to this middleware.
  * 
- * WHY?
- * - Centralizes error handling (don't repeat try-catch everywhere)
- * - Consistent error responses
- * - Logging errors in one place
- * - Hides sensitive error details in production
- * 
- * HOW IT WORKS:
- * Any route can throw an error or call next(error)
- * Express automatically sends it to this middleware
+ * MECHANISM:
+ * Express identifies error handlers by their argument count: (err, req, res, next).
+ * If you call `next(error)`, Express skips to this function.
  */
 
 /**
- * Global error handler
+ * Global Error Handler
  * 
- * LEARNING: This catches all errors and sends a proper response
- * 
- * @param {Error} err - The error object
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {Function} next - Next middleware function
+ * LOGIC:
+ * 1. Log the error (essential for debugging).
+ * 2. Determine Status Code (default to 500).
+ * 3. Handle specific error types (Prisma, JWT, Validation).
+ * 4. Send JSON response (hide stack trace in production).
  */
 export const errorHandler = (err, req, res, next) => {
-  // LEARNING: Log the error for debugging
+  // 1. Log Error
   console.error('❌ Error occurred:', {
     message: err.message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
@@ -35,24 +31,23 @@ export const errorHandler = (err, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 
-  // LEARNING: Different types of errors should return different status codes
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal server error';
 
-  // LEARNING: Handle specific error types
+  // 2. Handle Specific Errors
   
-  // Prisma errors (database errors)
+  // Prisma: Unique constraint violation (e.g., duplicate email)
   if (err.code === 'P2002') {
-    // Unique constraint violation (e.g., email already exists)
     statusCode = 409;
     message = 'A record with this value already exists';
-  } else if (err.code === 'P2025') {
-    // Record not found
+  } 
+  // Prisma: Record not found
+  else if (err.code === 'P2025') {
     statusCode = 404;
     message = 'Record not found';
   }
 
-  // JWT errors
+  // JWT: Invalid or Expired
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
@@ -61,15 +56,15 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Token expired';
   }
 
-  // Validation errors (from express-validator)
+  // Validation (express-validator)
   if (err.name === 'ValidationError') {
     statusCode = 400;
   }
 
-  // LEARNING: Send error response
+  // 3. Send Response
   res.status(statusCode).json({
     error: message,
-    // LEARNING: Only send stack trace in development (security!)
+    // Security: Only show stack trace in development
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };

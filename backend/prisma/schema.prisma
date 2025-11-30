@@ -23,6 +23,8 @@ model User {
   username  String   @unique              // Must be unique across all users
   password  String                         // Will store HASHED password (never plain text!)
   avatarUrl String?  @map("avatar_url")   // Optional field (? means nullable)
+  passwordResetToken     String?  @map("password_reset_token")
+  passwordResetExpires   DateTime? @map("password_reset_expires")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -39,6 +41,8 @@ model User {
 // SERVER MODEL (like Discord servers/guilds)
 // ============================================
 // LEARNING: A server is a workspace/community
+
+
 model Server {
   id         String   @id @default(uuid())
   name       String

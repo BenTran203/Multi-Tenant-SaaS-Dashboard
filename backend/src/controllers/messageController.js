@@ -1,25 +1,31 @@
 /**
+ * ============================================================================
  * MESSAGE CONTROLLER
- * 
- * LEARNING: Handles message operations
- * - Getting messages from a channel (with pagination)
- * - Creating messages (but real-time sending uses Socket.io)
- * - Deleting messages
+ * ============================================================================
+ *
+ * CONCEPT: Real-time vs REST
+ * - Most messaging happens via Socket.io (real-time).
+ * - This controller handles "static" operations:
+ *   1. Fetching history (Pagination).
+ *   2. Deleting messages.
+ *   3. Fallback message creation (if socket fails).
  */
 
 import { prisma } from '../config/database.js';
 
 /**
  * Get messages from a channel (with pagination)
- * 
- * LEARNING: Pagination is important for performance
- * Don't load 10,000 messages at once!
- * 
+ *
+ * CONCEPT: Cursor-based Pagination
+ * Instead of "Page 1, Page 2" (Offset), we use "Before Message X" (Cursor).
+ * Why? It's faster and handles real-time data better (no skipped messages if new ones arrive).
+ *
+ * LOGIC:
+ * 1. Check membership.
+ * 2. Fetch `limit` messages created BEFORE the `before` cursor.
+ * 3. Sort by newest first (to get the latest chunk), then reverse for display.
+ *
  * GET /api/channels/:channelId/messages?limit=50&before=messageId
- * 
- * QUERY PARAMS:
- * - limit: How many messages to get (default 50)
- * - before: Get messages before this message ID (for scrolling up)
  */
 export const getMessages = async (req, res) => {
   try {
@@ -27,7 +33,7 @@ export const getMessages = async (req, res) => {
     const { limit = 50, before } = req.query;
     const userId = req.user.id;
 
-    // LEARNING: Get the channel and its server
+    // 1. Validate Channel & Membership
     const channel = await prisma.channel.findUnique({
       where: { id: channelId },
       include: { server: true }
@@ -37,7 +43,6 @@ export const getMessages = async (req, res) => {
       return res.status(404).json({ error: 'Channel not found' });
     }
 
-    // LEARNING: Check if user is a member of the server
     const isMember = await prisma.serverMember.findUnique({
       where: {
         userId_serverId: {
@@ -53,13 +58,13 @@ export const getMessages = async (req, res) => {
       });
     }
 
-    // LEARNING: Build query with pagination
+    // 2. Build Query
     const whereClause = {
       channelId: channelId,
-      deleted: false // Don't show deleted messages
+      deleted: false
     };
 
-    // If "before" is provided, only get messages before that message's timestamp
+    // Cursor Logic: "Get messages older than X"
     if (before) {
       const beforeMessage = await prisma.message.findUnique({
         where: { id: before }
@@ -67,12 +72,12 @@ export const getMessages = async (req, res) => {
       
       if (beforeMessage) {
         whereClause.createdAt = {
-          lt: beforeMessage.createdAt // lt = less than
+          lt: beforeMessage.createdAt // lt = Less Than
         };
       }
     }
 
-    // LEARNING: Get messages with user info
+    // 3. Fetch Data
     const messages = await prisma.message.findMany({
       where: whereClause,
       include: {
@@ -84,17 +89,17 @@ export const getMessages = async (req, res) => {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }, // Newest first
+      orderBy: { createdAt: 'desc' }, // Newest first (closest to now/cursor)
       take: parseInt(limit)
     });
 
-    // LEARNING: Reverse the array so oldest message is first
-    // Why? We fetched newest first for pagination, but want to display oldest first
+    // 4. Format Response
+    // Reverse to show oldest -> newest in the UI
     const messagesInOrder = messages.reverse();
 
     res.json({ 
       messages: messagesInOrder,
-      hasMore: messages.length === parseInt(limit) // Are there more messages?
+      hasMore: messages.length === parseInt(limit)
     });
 
   } catch (error) {

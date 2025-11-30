@@ -1,67 +1,55 @@
 /**
+ * ============================================================================
  * AUTHENTICATION MIDDLEWARE
+ * ============================================================================
  * 
- * LEARNING: Middleware is a function that runs BEFORE your route handler
- * It can:
- * - Modify the request/response objects
- * - End the request-response cycle
- * - Call the next middleware in the stack
+ * CONCEPT: Middleware
+ * Middleware functions have access to the request (req) and response (res) objects.
+ * They sit "in the middle" between the raw request and your final route handler.
  * 
- * This middleware checks if the user is authenticated (has a valid JWT token)
- * 
- * FLOW:
- * Client Request → auth middleware → (if valid) → Route Handler
- *                     ↓ (if invalid)
- *                  401 Error Response
+ * RESPONSIBILITY:
+ * - Verify the JWT token from the "Authorization" header.
+ * - If valid: Attach the user to `req.user` and call `next()`.
+ * - If invalid: Stop the request and return 401 Unauthorized.
  */
 
 import { verifyToken } from '../config/jwt.js';
 import { prisma } from '../config/database.js';
 
 /**
- * Middleware to protect routes (require authentication)
+ * Protects routes by requiring a valid JWT token.
  * 
- * LEARNING: This checks for a JWT token in the request header
- * If valid, it adds the user object to req.user so route handlers can use it
- * If invalid, it returns a 401 Unauthorized error
- * 
- * HOW TO USE:
- * import { authenticate } from './middleware/auth.js';
- * router.get('/protected-route', authenticate, (req, res) => {
- *   // req.user is now available!
- *   console.log(req.user);
- * });
+ * LOGIC FLOW:
+ * 1. Check for "Authorization" header.
+ * 2. Validate format ("Bearer <token>").
+ * 3. Verify token signature (is it real? is it expired?).
+ * 4. Fetch user from DB (ensure they still exist).
+ * 5. Attach user to `req` and proceed.
  */
 export const authenticate = async (req, res, next) => {
   try {
-    // LEARNING: Get the Authorization header
-    // Format: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    // 1. Get Header
     const authHeader = req.headers.authorization;
 
-    // LEARNING: Check if Authorization header exists
     if (!authHeader) {
       return res.status(401).json({ 
         error: 'No authorization token provided' 
       });
     }
 
-    // LEARNING: Check if it starts with "Bearer "
+    // 2. Check Format
     if (!authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ 
         error: 'Invalid authorization format. Use: Bearer <token>' 
       });
     }
 
-    // LEARNING: Extract the token (remove "Bearer " prefix)
-    // "Bearer token123" → "token123"
-    const token = authHeader.substring(7); // "Bearer " is 7 characters
-
-    // LEARNING: Verify the token
-    // This throws an error if token is invalid or expired
+    // 3. Verify Token
+    const token = authHeader.substring(7); // Remove "Bearer "
     const decoded = verifyToken(token);
 
-    // LEARNING: Get the full user from database
-    // WHY?: The token only contains userId and email, but we might need more user data
+    // 4. Fetch User
+    // We fetch fresh data from DB to ensure the user hasn't been banned/deleted.
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -70,29 +58,21 @@ export const authenticate = async (req, res, next) => {
         username: true,
         avatarUrl: true,
         createdAt: true,
-        // LEARNING: NEVER send the password, even if it's hashed!
-        password: false
+        password: false // Security: Never select password
       }
     });
 
-    // LEARNING: Check if user still exists
-    // WHY?: User might have been deleted after token was issued
     if (!user) {
       return res.status(401).json({ 
         error: 'User no longer exists' 
       });
     }
 
-    // LEARNING: Attach user to request object
-    // Now any route handler can access req.user
+    // 5. Attach & Proceed
     req.user = user;
-
-    // LEARNING: Call next() to pass control to the next middleware/route handler
-    // If you forget next(), the request will hang forever!
     next();
 
   } catch (error) {
-    // LEARNING: If anything goes wrong (invalid token, database error, etc.)
     return res.status(401).json({ 
       error: 'Invalid or expired token',
       details: error.message 

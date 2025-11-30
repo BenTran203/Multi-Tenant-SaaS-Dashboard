@@ -1,11 +1,17 @@
 /**
+ * ============================================================================
  * SERVER CONTROLLER
+ * ============================================================================
  *
- * LEARNING: This handles all server-related operations
- * - Creating servers (like Discord servers/guilds)
- * - Getting user's servers
- * - Joining servers with invite codes
- * - Managing server members
+ * CONCEPT: Servers (Guilds)
+ * - A Server is the top-level container for communities.
+ * - It contains Channels and Members.
+ * - It has an Owner (creator) who has full control.
+ *
+ * LOGIC FLOW:
+ * - Users create servers -> become Owner & Admin.
+ * - Users join servers via Invite Code -> become Member.
+ * - Users can be members of multiple servers (Many-to-Many).
  */
 
 import { prisma } from "../config/database.js";
@@ -13,35 +19,34 @@ import { prisma } from "../config/database.js";
 /**
  * Create a new server
  *
- * LEARNING: When a user creates a server:
- * 1. Create the server
- * 2. Make the creator the owner
- * 3. Add creator as an ADMIN member
- * 4. Create a default "general" channel
+ * LOGIC:
+ * 1. Create the Server entity.
+ * 2. Add the creator as the first Member (Role: ADMIN).
+ * 3. Create a default "general" Channel.
+ *
+ * CONCEPT: Database Transactions (ACID)
+ * We use `prisma.$transaction` to ensure all 3 steps happen together.
+ * If step 3 fails, steps 1 & 2 are rolled back. No "zombie" servers!
  *
  * POST /api/servers
- * Body: { name }
+ * Body: { name, icon }
  */
 export const createServer = async (req, res) => {
   try {
     const { name, icon } = req.body;
-    const userId = req.user.id; // From authenticate middleware
+    const userId = req.user.id;
 
-    // LEARNING: Prisma transaction - all or nothing!
-    // If any operation fails, everything is rolled back
-    // WHY? We don't want a server without a channel, or a member without a server
     const server = await prisma.$transaction(async (tx) => {
-      // 1. Create the server
+      // 1. Create Server
       const newServer = await tx.server.create({
         data: {
           name,
           iconUrl: icon,
           ownerId: userId,
-          // inviteCode is automatically generated (see schema.prisma)
         },
       });
 
-      // 2. Add creator as ADMIN member
+      // 2. Add Owner as Admin
       await tx.serverMember.create({
         data: {
           userId: userId,
@@ -50,7 +55,7 @@ export const createServer = async (req, res) => {
         },
       });
 
-      // 3. Create default "general" channel
+      // 3. Create Default Channel
       await tx.channel.create({
         data: {
           name: "general",
@@ -79,8 +84,10 @@ export const createServer = async (req, res) => {
 /**
  * Get all servers the user is a member of
  *
- * LEARNING: This finds all servers where the user is a member
- * Includes server details, channel count, member count
+ * LOGIC:
+ * - Find all servers where the `members` list contains the current user.
+ * - Include the owner's basic info.
+ * - Count members and channels for display.
  *
  * GET /api/servers
  */
@@ -91,7 +98,7 @@ export const getUserServers = async (req, res) => {
     const servers = await prisma.server.findMany({
       where: {
         members: {
-          some: { userId: userId },
+          some: { userId: userId }, // "some" member has this userId
         },
       },
       include: {
@@ -116,7 +123,11 @@ export const getUserServers = async (req, res) => {
 /**
  * Get a specific server by ID
  *
- * LEARNING: Returns detailed server info including channels and members
+ * LOGIC:
+ * 1. Fetch server with all nested data (channels, members).
+ * 2. Security Check: Is the requester a member?
+ *    - If yes, return data.
+ *    - If no, return 403 Forbidden.
  *
  * GET /api/servers/:id
  */
@@ -125,7 +136,7 @@ export const getServerById = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // LEARNING: Find server with all related data
+    // 1. Fetch Server
     const server = await prisma.server.findUnique({
       where: { id },
       include: {
@@ -158,7 +169,7 @@ export const getServerById = async (req, res) => {
       return res.status(404).json({ error: "Server not found" });
     }
 
-    // LEARNING: Check if user is a member of this server
+    // 2. Security Check
     const isMember = server.members.some((member) => member.userId === userId);
 
     if (!isMember) {
@@ -180,7 +191,10 @@ export const getServerById = async (req, res) => {
 /**
  * Join a server with invite code
  *
- * LEARNING: Anyone with an invite code can join a server
+ * LOGIC:
+ * 1. Find server by invite code.
+ * 2. Check if user is ALREADY a member (prevent duplicates).
+ * 3. Create a new `ServerMember` record.
  *
  * POST /api/servers/join
  * Body: { inviteCode }
@@ -190,7 +204,7 @@ export const joinServer = async (req, res) => {
     const { inviteCode } = req.body;
     const userId = req.user.id;
 
-    // LEARNING: Find server by invite code
+    // 1. Find Server
     const server = await prisma.server.findUnique({
       where: { inviteCode },
     });
@@ -201,7 +215,7 @@ export const joinServer = async (req, res) => {
       });
     }
 
-    // LEARNING: Check if user is already a member
+    // 2. Check for existing membership
     const existingMember = await prisma.serverMember.findUnique({
       where: {
         userId_serverId: {
@@ -217,7 +231,7 @@ export const joinServer = async (req, res) => {
       });
     }
 
-    // LEARNING: Add user as a member
+    // 3. Add Member
     await prisma.serverMember.create({
       data: {
         userId: userId,

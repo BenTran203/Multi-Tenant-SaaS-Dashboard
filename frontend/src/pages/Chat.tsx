@@ -80,7 +80,7 @@ export function Chat() {
     try {
       setLoading(true);
       const response = await api.get('/api/servers');
-      const serverList = response.data;
+      const serverList = response.data.servers;
       setServers(serverList);
 
       // Auto-select first server if available
@@ -125,7 +125,7 @@ export function Chat() {
    */
   const handleServerSelect = (serverId: number) => {
     setSelectedServerId(serverId);
-    setSelectedChannelId(null); // Reset channel when switching servers
+    setSelectedChannelId(null); 
   };
 
   const handleChannelSelect = (channelId: number) => {

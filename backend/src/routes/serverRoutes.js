@@ -1,7 +1,11 @@
 /**
+ * ============================================================================
  * SERVER ROUTES
+ * ============================================================================
  * 
- * LEARNING: All routes here require authentication
+ * CONCEPT: Protected Routes
+ * All routes in this file require the user to be logged in.
+ * We use the `authenticate` middleware to enforce this.
  */
 
 import express from 'express';

@@ -1,35 +1,34 @@
 /**
+ * ============================================================================
  * AUTHENTICATION CONTROLLER
- * 
- * LEARNING: Controllers contain the business logic for your routes
- * They handle requests, process data, and send responses
- * 
- * RESPONSIBILITIES:
- * - Validate input (with middleware)
- * - Interact with database (via Prisma)
- * - Handle business logic
- * - Send responses
- * 
- * This controller handles:
- * - User registration
- * - User login
- * - Getting current user info
+ * ============================================================================
+ *
+ * CONCEPT: Authentication vs Authorization
+ * - Authentication (AuthN): "Who are you?" (Login, Register)
+ * - Authorization (AuthZ): "What are you allowed to do?" (Access Control)
+ *
+ * LOGIC FLOW:
+ * 1. Client sends credentials (email/password).
+ * 2. Server validates credentials against Database.
+ * 3. Server issues a JWT (JSON Web Token).
+ * 4. Client attaches JWT to future requests.
  */
 
-import bcrypt from 'bcrypt';
-import { prisma } from '../config/database.js';
-import { generateToken } from '../config/jwt.js';
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { prisma } from "../config/database.js";
+import { generateToken } from "../config/jwt.js";
+import { resetPasswordEmail } from '../config/email.js';
 
 /**
  * Register a new user
- * 
- * LEARNING: Registration flow:
- * 1. Check if user already exists
- * 2. Hash the password (NEVER store plain text!)
- * 3. Create user in database
- * 4. Generate JWT token
- * 5. Return token and user info
- * 
+ *
+ * LOGIC:
+ * 1. Check if email/username is taken.
+ * 2. Hash the password (security critical!).
+ * 3. Create user in DB.
+ * 4. Issue JWT token immediately so they are logged in.
+ *
  * POST /api/auth/register
  * Body: { email, username, password }
  */
@@ -37,84 +36,72 @@ export const register = async (req, res) => {
   try {
     const { email, username, password } = req.body;
 
-    // LEARNING: Check if user already exists
-    // Why? Email and username must be unique
+    // 1. Check uniqueness
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: email },
-          { username: username }
-        ]
-      }
+        OR: [{ email: email }, { username: username }],
+      },
     });
 
     if (existingUser) {
       return res.status(409).json({
-        error: 'User with this email or username already exists'
+        error: "User with this email or username already exists",
       });
     }
 
-    // LEARNING: Hash the password with bcrypt
-    // - First argument: plain text password
-    // - Second argument: salt rounds (higher = more secure but slower)
-    // - Returns: hashed password string
-    // 
-    // WHY HASH?
-    // - If database is breached, attackers can't read passwords
-    // - Bcrypt is "one-way" - can't reverse it to get original password
-    // - Each hash is unique even for the same password (due to salt)
+    // 2. Hash password
+    // CONCEPT: Hashing
+    // We never store plain text passwords. We store a "hash" - a one-way scrambled version.
+    // '10' is the salt rounds (cost factor). Higher = safer but slower.
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // LEARNING: Create user in database
+    // 3. Create user
     const user = await prisma.user.create({
       data: {
         email,
         username,
-        password: hashedPassword
+        password: hashedPassword,
       },
       select: {
-        // LEARNING: Only select fields we want to return (exclude password!)
+        // Security: Never return the password hash to the client!
         id: true,
         email: true,
         username: true,
         avatarUrl: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
 
-    // LEARNING: Generate JWT token
-    // This token will be used for authentication in future requests
+    // 4. Generate Token
     const token = generateToken({
       userId: user.id,
-      email: user.email
+      email: user.email,
     });
 
     // LEARNING: Send successful response
     res.status(201).json({
-      message: 'User registered successfully',
+      message: "User registered successfully",
       token,
-      user
+      user,
     });
-
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      error: 'Failed to register user',
-      details: error.message 
+    console.error("Registration error:", error);
+    res.status(500).json({
+      error: "Failed to register user",
+      details: error.message,
     });
   }
 };
 
 /**
  * Login a user
- * 
- * LEARNING: Login flow:
- * 1. Find user by email
- * 2. Compare password with hashed password
- * 3. Generate JWT token
- * 4. Return token and user info
- * 
+ *
+ * LOGIC:
+ * 1. Find user by email.
+ * 2. Compare provided password with stored hash.
+ * 3. If match, issue JWT.
+ *
  * POST /api/auth/login
  * Body: { email, password }
  */
@@ -122,118 +109,187 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // LEARNING: Find user by email
+    // 1. Find user
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
-    // LEARNING: Check if user exists
+    // Security: Use generic error message to prevent user enumeration
     if (!user) {
-      // SECURITY NOTE: Don't reveal if email exists or password is wrong
-      // Just say "Invalid credentials" for both cases
       return res.status(401).json({
-        error: 'Invalid email or password'
+        error: "Invalid email or password",
       });
     }
 
-    // LEARNING: Compare provided password with hashed password
-    // bcrypt.compare() hashes the provided password and compares it
-    // Returns true if they match, false otherwise
+    // 2. Verify password
+    // bcrypt.compare() hashes the input and checks if it matches the stored hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({
-        error: 'Invalid email or password'
+        error: "Invalid email or password",
       });
     }
 
-    // LEARNING: Generate JWT token
+    // 3. Issue Token
     const token = generateToken({
       userId: user.id,
-      email: user.email
+      email: user.email,
     });
 
-    // LEARNING: Remove password from response
+    // Remove sensitive data before sending
     const { password: _, ...userWithoutPassword } = user;
 
     res.json({
-      message: 'Login successful',
+      message: "Login successful",
       token,
-      user: userWithoutPassword
+      user: userWithoutPassword,
     });
-
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      error: 'Failed to login',
-      details: error.message 
+    console.error("Login error:", error);
+    res.status(500).json({
+      error: "Failed to login",
+      details: error.message,
     });
   }
 };
 
 /**
  * Get current user info
- * 
- * LEARNING: This route is protected by authenticate middleware
- * The middleware adds req.user, so we just return it
- * 
+ *
+ * LOGIC:
+ * - This route is protected by `authenticate` middleware.
+ * - The middleware verifies the JWT and attaches `req.user`.
+ * - We simply return that user object.
+ *
  * GET /api/auth/me
- * Headers: { Authorization: "Bearer <token>" }
  */
 export const getCurrentUser = async (req, res) => {
   try {
-    // LEARNING: req.user is set by authenticate middleware
-    // We already have the user, just return it!
+    // req.user is populated by the middleware
     res.json({
-      user: req.user
+      user: req.user,
     });
-
   } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get user info',
-      details: error.message 
+    console.error("Get current user error:", error);
+    res.status(500).json({
+      error: "Failed to get user info",
+      details: error.message,
     });
   }
 };
 
 /**
- * TODO (LEARNING): Implement password reset functionality
- * 
- * CHALLENGE: Create these functions:
- * 1. requestPasswordReset(req, res)
- *    - Generate a reset token
- *    - Save token to database with expiration
- *    - Send email with reset link (use nodemailer)
- * 
- * 2. resetPassword(req, res)
- *    - Verify reset token
- *    - Hash new password
- *    - Update user password
- *    - Invalidate reset token
- * 
- * HINT: Add a passwordResetToken and passwordResetExpires field to User model
- * RESOURCES: https://nodemailer.com/about/
+ * Forgot Password (Development Mode)
+ *
+ * LOGIC:
+ * - In a real app, we would send an email with a reset link.
+ * - We will be using resend to send a reset URL token for confirmation
+ * POST /api/auth/forgot-password
  */
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      // We return success even if user doesn't exist to prevent enumeration
+      return res.json({ 
+        message: "We have sent you a reset link, you should be able to recieve it in your inbox." 
+      });
+    }
+
+    // Generate reset token (random 32 bytes)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Set expiration (1 hour from now)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    // Save to database
+    await prisma.user.update({
+      where: { email },
+      data: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: expiresAt,
+      },
+    });
+
+    // Send email with plain token (not hashed)
+    await resetPasswordEmail(email, resetToken);
+
+    res.json({ 
+      message: "We have sent you a link for reseting your password" 
+    });
+
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    res.status(500).json({ error: "Failed to process request" });
+  }
+};
+
+//Reset Password - Step 2 (Verify Token & Update Password)
+//POST /api/auth/reset-password
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Hash the provided token to match database
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Find user with valid token
+    const user = await prisma.user.findFirst({
+      where: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: {
+          gt: new Date(), 
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        error: "Can't find user or token already expired" 
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password and clear reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+
+    res.json({ message: "Password reset successfully" });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+};
+
 
 /**
- * LEARNING: Authentication Security Best Practices
- * 
+ * ============================================================================
+ * SECURITY BEST PRACTICES
+ * ============================================================================
  * ✅ DO:
- * - Always hash passwords (never store plain text)
- * - Use bcrypt with at least 10 salt rounds
- * - Use JWT for stateless authentication
- * - Set token expiration (e.g., 7 days)
- * - Validate all inputs
- * - Use HTTPS in production
- * - Rate limit login attempts
- * 
- * ❌ DON'T:
- * - Store passwords in plain text
- * - Use weak hashing algorithms (MD5, SHA1)
- * - Put sensitive data in JWT payload (it's not encrypted!)
- * - Share JWT_SECRET publicly
- * - Allow unlimited login attempts
- * - Reveal if email exists during login
+ * - Hash passwords (bcrypt).
+ * - Use HTTPS in production.
+ * - Validate all inputs.
+ * - Rate limit login attempts (prevent brute force).
  */
-

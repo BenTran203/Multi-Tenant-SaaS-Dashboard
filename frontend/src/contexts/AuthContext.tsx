@@ -29,6 +29,7 @@ interface AuthContextType {
   loading: boolean;               // True while checking if user is logged in
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  forgotPass: (email: string, newpassword: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -139,6 +140,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
+   * FORGOT PASSWORD FUNCTION
+   * 
+   * LEARNING: Password reset functionality
+   * - Makes POST request to /api/auth/forgot-password
+   * - Does NOT automatically log in the user
+   * - User must login again with new password
+   * 
+   * @param email - User's email
+   * @param newPassword - New password
+   * @param confirmPassword - Password confirmation
+   */
+  const forgotPass = async (email: string, newPassword: string, confirmPassword: string) => {
+    // Frontend validation (backend should also validate)
+    if (newPassword !== confirmPassword) {
+      throw new Error('Passwords do not match');
+    }
+
+    // TODO: Implement actual password reset endpoint
+    // For now, this will throw an error since the endpoint doesn't exist yet
+    const response = await api.post('/api/auth/forgot-password', { 
+      email, 
+      newPassword 
+    });
+    
+    // Note: We do NOT save token or user here
+    // User must log in again with their new password
+    return response.data;
+  };
+
+  /**
    * REGISTER FUNCTION
    * 
    * Similar to login but creates new user account
@@ -182,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, forgotPass, logout }}>
       {children}
     </AuthContext.Provider>
   );

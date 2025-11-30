@@ -97,6 +97,23 @@ export const loginValidation = [
 ];
 
 /**
+ * User New password validation
+ */
+export const forgotPassword = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Must be a valid email address'),
+    
+  body('newPassword')
+    .notEmpty()
+    .withMessage('Password is required'),
+  
+  body('confirmPassword')
+    .notEmpty()
+    .withMessage('Password must match the new password')
+];
+/**
  * Server creation validation
  */
 export const createServerValidation = [

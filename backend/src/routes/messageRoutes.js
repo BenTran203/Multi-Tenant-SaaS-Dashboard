@@ -1,5 +1,14 @@
 /**
+ * ============================================================================
  * MESSAGE ROUTES
+ * ============================================================================
+ * 
+ * CONCEPT: Resource Hierarchy
+ * Messages belong to Channels.
+ * - Fetch: GET /api/channels/:channelId/messages
+ * - Create: POST /api/channels/:channelId/messages
+ * 
+ * Note: Deletion is by Message ID directly (unique globally).
  */
 
 import express from 'express';

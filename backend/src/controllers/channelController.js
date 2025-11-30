@@ -1,19 +1,29 @@
 /**
+ * ============================================================================
  * CHANNEL CONTROLLER
- * 
- * LEARNING: Handles channel operations within servers
- * - Creating channels
- * - Getting channels in a server
- * - Updating/deleting channels
+ * ============================================================================
+ *
+ * CONCEPT: Channels
+ * - Channels are where the actual chat happens.
+ * - They belong to a Server.
+ * - They have a `type` (TEXT, VOICE) and a `position` (for sorting).
+ *
+ * LOGIC FLOW:
+ * - Admins create channels.
+ * - Channels are ordered by `position`.
+ * - Members can read/write in channels (unless restricted).
  */
 
 import { prisma } from '../config/database.js';
 
 /**
  * Create a new channel in a server
- * 
- * LEARNING: Only server admins can create channels
- * 
+ *
+ * LOGIC:
+ * 1. Check if user is a member AND an ADMIN (RBAC).
+ * 2. Calculate new position (append to end of list).
+ * 3. Create channel.
+ *
  * POST /api/servers/:serverId/channels
  * Body: { name, type }
  */
@@ -23,7 +33,7 @@ export const createChannel = async (req, res) => {
     const { name, type = 'TEXT' } = req.body;
     const userId = req.user.id;
 
-    // LEARNING: Check if user is an admin of this server
+    // 1. Check Permissions (RBAC)
     const membership = await prisma.serverMember.findUnique({
       where: {
         userId_serverId: {
@@ -45,7 +55,9 @@ export const createChannel = async (req, res) => {
       });
     }
 
-    // LEARNING: Get the highest position for ordering
+    // 2. Calculate Position
+    // We want the new channel to be at the bottom of the list.
+    // So we find the highest current position and add 1.
     const highestPosition = await prisma.channel.findFirst({
       where: { serverId },
       orderBy: { position: 'desc' },
@@ -54,7 +66,7 @@ export const createChannel = async (req, res) => {
 
     const newPosition = (highestPosition?.position ?? -1) + 1;
 
-    // LEARNING: Create the channel
+    // 3. Create Channel
     const channel = await prisma.channel.create({
       data: {
         name,
@@ -80,9 +92,12 @@ export const createChannel = async (req, res) => {
 
 /**
  * Get all channels in a server
- * 
- * LEARNING: Returns channels ordered by position
- * 
+ *
+ * LOGIC:
+ * 1. Check membership.
+ * 2. Fetch channels ordered by `position` (ASC).
+ * 3. Include message count (useful for UI badges).
+ *
  * GET /api/servers/:serverId/channels
  */
 export const getServerChannels = async (req, res) => {
@@ -90,7 +105,7 @@ export const getServerChannels = async (req, res) => {
     const { serverId } = req.params;
     const userId = req.user.id;
 
-    // LEARNING: Check if user is a member
+    // 1. Check Membership
     const isMember = await prisma.serverMember.findUnique({
       where: {
         userId_serverId: {
@@ -106,10 +121,10 @@ export const getServerChannels = async (req, res) => {
       });
     }
 
-    // LEARNING: Get all channels, ordered by position
+    // 2. Fetch Channels
     const channels = await prisma.channel.findMany({
       where: { serverId },
-      orderBy: { position: 'asc' },
+      orderBy: { position: 'asc' }, // 0, 1, 2...
       include: {
         _count: {
           select: { messages: true }
