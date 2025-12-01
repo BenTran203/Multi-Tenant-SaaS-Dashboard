@@ -1,0 +1,150 @@
+import bcrypt from "bcrypt";
+import { prisma } from "../config/database.js";
+
+/**
+ * Get Current User Profile
+ *
+ * LOGIC:
+ * - req.user is populated by authenticate middleware
+ * - Fetch full user data from database
+ * - Exclude password from response
+ *
+ * GET /api/users/profile
+ */
+export const getProfile = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      error: "Failed to get profile",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Update User Profile
+ *
+ * LOGIC:
+ * - Validate input (username, email, bio, avatarUrl)
+ * - Check if new username/email is already taken
+ * - Update database
+ * - Return updated user (without password)
+ *
+ * PUT /api/users/profile
+ * Body: { username?, email?, bio?, avatarUrl? }
+ */
+export const updateProfile = async (req, res) => {
+  try {
+    const { username, email, bio, avatarUrl } = req.body;
+    const userId = req.user.id;
+
+    // CONCEPT: Partial Updates
+    // Build an object with only the fields that were provided
+    const updateData = {};
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (bio !== undefined) updateData.bio = bio;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+
+    // Check if username is taken (if changing username)
+    if (username) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          username,
+          NOT: { id: userId }, // Exclude current user
+        },
+      });
+
+      if (existingUser) {
+        return res.status(409).json({
+          error: "Username is already taken",
+        });
+      }
+    }
+
+    // Check if email is taken (if changing email)
+    if (email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email,
+          NOT: { id: userId }, // Exclude current user
+        },
+      });
+
+      if (existingUser) {
+        return res.status(409).json({
+          error: "Email is already taken",
+        });
+      }
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      error: "Failed to update profile",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Delete User Account (Optional)
+ *
+ * LOGIC:
+ */
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+    res.json({
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.log('Unable to delete account:', error)
+    res.status(500).json({
+        error: "Faild to delete account",
+        details: error.message
+    });
+   }
+};

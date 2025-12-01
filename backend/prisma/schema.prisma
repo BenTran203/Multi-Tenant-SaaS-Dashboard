@@ -18,17 +18,18 @@ datasource db {
 // ============================================
 // LEARNING: This represents the "users" table in your database
 model User {
-  id        String   @id @default(uuid()) // UUID = Universally Unique Identifier
+  id        String   @id @default(uuid()) // Universally Unique Identifier
   email     String   @unique              // Must be unique across all users
   username  String   @unique              // Must be unique across all users
-  password  String                         // Will store HASHED password (never plain text!)
-  avatarUrl String?  @map("avatar_url")   // Optional field (? means nullable)
+  password  String                         // Will store HASHED password 
+  avatarUrl String?  @map("avatar_url")   // Optional field
+  bio       String?  @db.Text 
   passwordResetToken     String?  @map("password_reset_token")
   passwordResetExpires   DateTime? @map("password_reset_expires")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // LEARNING: RELATIONSHIPS - A user can have many...
+  //A user can have many server, messages
   ownedServers  Server[]       @relation("ServerOwner")   // Servers they created
   serverMembers ServerMember[]                             // Servers they're a member of
   messages      Message[]                                  // Messages they sent
@@ -52,12 +53,11 @@ model Server {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // LEARNING: RELATIONSHIPS - A server belongs to one owner, has many members and channels
+  //A server belongs to one owner, has many members and channels
   owner   User           @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members ServerMember[]
   channels Channel[]
 
-  // LEARNING: onDelete: Cascade means if a user is deleted, their servers are also deleted
   @@map("servers")
 }
 

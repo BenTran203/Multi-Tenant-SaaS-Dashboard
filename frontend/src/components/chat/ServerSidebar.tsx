@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Hash } from 'lucide-react';
 import { Server, User } from '../../types';
 import { api } from '../../services/api';
@@ -34,6 +35,8 @@ export function ServerSidebar({
   onServerCreated,
   user
 }: ServerSidebarProps) {
+  
+  const navigate = useNavigate();
   
   // Modal state for creating new server
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -83,10 +86,14 @@ export function ServerSidebar({
       {/* LEARNING: Fixed Width Sidebar */}
       <div className="w-20 bg-white dark:bg-dark-surface border-r border-nature-stone dark:border-dark-border flex flex-col items-center py-4 gap-3">
         
-        {/* User avatar at top */}
-        <div className="w-12 h-12 rounded-2xl bg-grass-100 dark:bg-grass-900/30 flex items-center justify-center text-grass-600 dark:text-grass-400 font-pixel text-xs hover-bounce">
+        {/* User avatar at top - Click to go to profile */}
+        <button
+          onClick={() => navigate('/profile')}
+          className="w-12 h-12 rounded-2xl bg-grass-100 dark:bg-grass-900/30 flex items-center justify-center text-grass-600 dark:text-grass-400 font-pixel text-xs hover-bounce hover:scale-110 transition-transform"
+          title="My Profile"
+        >
           {user?.username.slice(0, 2).toUpperCase()}
-        </div>
+        </button>
 
         <div className="w-10 h-0.5 bg-nature-stone dark:bg-dark-border rounded-full"></div>
 

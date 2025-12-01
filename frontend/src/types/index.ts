@@ -26,6 +26,8 @@ export interface User {
   email: string;
   username: string;
   password?: string;        // Optional, never sent from backend
+  avatarUrl?: string;       // Optional avatar URL
+  bio?: string;             // Optional user bio (to be added)
   createdAt: string;        // ISO date string
 }
 

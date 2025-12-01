@@ -162,7 +162,7 @@ export function Chat() {
   return (
     <div className="h-screen flex overflow-hidden bg-nature-cream dark:bg-dark-bg">
       
-      {/* LEARNING: 3-Column Slack-Style Layout */}
+
       
       {/* 1️⃣ LEFT SIDEBAR: Server List (narrow) */}
       <ServerSidebar

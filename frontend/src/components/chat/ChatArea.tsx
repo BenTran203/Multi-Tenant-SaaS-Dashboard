@@ -37,11 +37,13 @@ export function ChatArea({ channelId }: ChatAreaProps) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]); // Store typing usernames
 
   // LEARNING: useRef for DOM element access
   // - Persists across re-renders (unlike regular variables)
   // - Used to programmatically scroll to bottom
   const messagesEndRef = useRef<HTMLDivElement>(null);
+const typingTimeoutRef = useRef<number | null>(null);
 
   /**
    * LEARNING: Fetch Messages on Channel Change
@@ -73,23 +75,50 @@ export function ChatArea({ channelId }: ChatAreaProps) {
    */
   useEffect(() => {
     // Define message handler
-    const handleNewMessage = (message: Message) => {
+    const handleNewMessage = (data: { message: Message }) => {
       // Only add if it's for current channel
-      if (message.channelId === channelId) {
-        setMessages((prevMessages) => [...prevMessages, message]);
+      if (data.message.channelId === channelId) {
+        setMessages((prevMessages) => [...prevMessages, data.message]);
         scrollToBottom();
       }
     };
 
-    // Register listener
-    socket.on('newMessage', handleNewMessage);
+    // Typing indicators
+    const handleUserTyping = (data: { userId: string; username: string; channelId: number }) => {
+      if (data.channelId === channelId && data.username !== user?.username) {
+        setTypingUsers((prev) => {
+          if (!prev.includes(data.username)) {
+            return [...prev, data.username];
+          }
+          return prev;
+        });
+      }
+    };
 
-    // LEARNING: Cleanup - Remove listener
+    const handleUserStoppedTyping = (data: { userId: string; username: string; channelId: number }) => {
+      if (data.channelId === channelId) {
+        setTypingUsers((prev) => prev.filter((username) => username !== data.username));
+      }
+    };
+
+    // Register listeners
+    socket.on('new-message', handleNewMessage);
+    socket.on('user-typing', handleUserTyping);
+    socket.on('user-stopped-typing', handleUserStoppedTyping);
+
+    // LEARNING: Cleanup - Remove listeners
     // Prevents memory leaks and duplicate handlers
     return () => {
-      socket.off('newMessage', handleNewMessage);
+      socket.off('new-message', handleNewMessage);
+      socket.off('user-typing', handleUserTyping);
+      socket.off('user-stopped-typing', handleUserStoppedTyping);
+      
+      // Clear typing timeout on unmount
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
-  }, [channelId]);
+  }, [channelId, user]);
 
   /**
    * AUTO-SCROLL TO BOTTOM
@@ -127,13 +156,44 @@ export function ChatArea({ channelId }: ChatAreaProps) {
    */
   const joinSocketRoom = () => {
     if (socket.connected) {
-      socket.emit('joinChannel', channelId);
+      socket.emit('join-channel', { channelId });
     } else {
       // If not connected, connect first
       socket.connect();
       socket.on('connect', () => {
-        socket.emit('joinChannel', channelId);
+        socket.emit('join-channel', { channelId });
       });
+    }
+  };
+
+  /**
+   * HANDLE TYPING
+   * 
+   * LEARNING: Debounced Typing Indicator
+   * - Emit 'typing-start' when user starts typing
+   * - After 2 seconds of no input, emit 'typing-stop'
+   * - This prevents spamming the server
+   */
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Only emit if user is actually typing something
+    if (value.trim()) {
+      socket.emit('typing-start', { channelId });
+
+      // Set timeout to emit typing-stop after 2 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing-stop', { channelId });
+      }, 2000);
+    } else {
+      // If input is cleared, immediately stop typing
+      socket.emit('typing-stop', { channelId });
     }
   };
 
@@ -154,12 +214,17 @@ export function ChatArea({ channelId }: ChatAreaProps) {
     setNewMessage(''); // Clear input immediately for better UX
     setSending(true);
 
+    // Stop typing indicator when sending
+    socket.emit('typing-stop', { channelId });
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     try {
-      // LEARNING: POST request to send message
-      // - Backend saves to database
-      // - Backend broadcasts via Socket.io
-      // - We receive it via 'newMessage' event (no need to manually add)
-      await api.post(`/channels/${channelId}/messages`, {
+      // LEARNING: Socket.io for real-time messages
+      // Instead of API call, emit socket event directly
+      socket.emit('send-message', {
+        channelId,
         content: messageContent
       });
     } catch (error) {
@@ -230,13 +295,34 @@ export function ChatArea({ channelId }: ChatAreaProps) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-6 py-2 text-sm text-nature-600 dark:text-nature-400 font-sans italic animate-fade-in">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+            <span>
+              {typingUsers.length === 1 
+                ? `${typingUsers[0]} is typing...`
+                : typingUsers.length === 2
+                ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
+                : `${typingUsers.slice(0, 2).join(', ')} and ${typingUsers.length - 2} others are typing...`
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* LEARNING: Message Input Form */}
       <div className="border-t border-nature-stone dark:border-dark-border p-4 bg-white dark:bg-dark-surface">
         <form onSubmit={handleSendMessage} className="flex gap-3">
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message... 🌿"
             className="input-field flex-1"
             disabled={sending}

@@ -17,10 +17,9 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import fs from 'fs';
-import path from 'path';
 import { prisma } from './config/database.js';
-import authRoutes from './routes/authRoutes.js'; // Import routes
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js'
 import serverRoutes from './routes/serverRoutes.js';
 import channelRoutes from './routes/channelRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
@@ -92,7 +91,11 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', limiter, authRoutes); //Apply limter to authentication
 app.use('/api/servers', serverRoutes);
 app.use('/api', channelRoutes);
-app.use('/api', messageRoutes);  
+app.use('/api', messageRoutes); 
+
+// app.use('/api/me', userProfile)
+app.use('/api/users', userRoutes);
+
 
 // 404 handler (must be AFTER all routes)
 app.use(notFoundHandler);
@@ -138,19 +141,6 @@ const startServer = async () => {
       console.log(`📡 REST API: http://localhost:${PORT}`);
       console.log(`⚡ WebSocket: ws://localhost:${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`\n📚 API Documentation:`);
-      console.log(`   POST   /api/auth/register`);
-      console.log(`   POST   /api/auth/login`);
-      console.log(`   GET    /api/auth/me`);
-      console.log(`   POST   /api/servers`);
-      console.log(`   GET    /api/servers`);
-      console.log(`   POST   /api/servers/join`);
-      console.log(`   GET    /api/servers/:id`);
-      console.log(`   POST   /api/servers/:serverId/channels`);
-      console.log(`   GET    /api/servers/:serverId/channels`);
-      console.log(`   GET    /api/channels/:channelId/messages`);
-      console.log(`   POST   /api/channels/:channelId/messages`);
-      console.log(`\n📖 Open README.md for setup instructions\n`);
     });
 
   } catch (error) {
