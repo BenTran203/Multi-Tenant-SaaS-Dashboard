@@ -103,8 +103,8 @@ export function Chat() {
    */
   const fetchChannels = async (serverId: number) => {
     try {
-      const response = await api.get(`/servers/${serverId}/channels`);
-      const channelList = response.data;
+      const response = await api.get(`/api/servers/${serverId}/channels`);
+      const channelList = response.data.channels;
       setChannels(channelList);
 
       // Auto-select first channel

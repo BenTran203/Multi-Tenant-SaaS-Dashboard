@@ -59,12 +59,12 @@ export function ChannelSidebar({
     setError('');
 
     try {
-      const response = await api.post(`/servers/${serverId}/channels`, {
+      const response = await api.post(`/api/servers/${serverId}/channels`, {
         name: channelName,
         type: 'text'
       });
 
-      onChannelCreated(response.data);
+      onChannelCreated(response.data.channel);
       setChannelName('');
       setShowCreateModal(false);
     } catch (err: any) {

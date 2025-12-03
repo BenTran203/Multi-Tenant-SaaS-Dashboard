@@ -43,7 +43,8 @@ export function ChatArea({ channelId }: ChatAreaProps) {
   // - Persists across re-renders (unlike regular variables)
   // - Used to programmatically scroll to bottom
   const messagesEndRef = useRef<HTMLDivElement>(null);
-const typingTimeoutRef = useRef<number | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
+  const isTypingRef = useRef<boolean>(false); // Track if user is currently in "typing" state
 
   /**
    * LEARNING: Fetch Messages on Channel Change
@@ -85,9 +86,11 @@ const typingTimeoutRef = useRef<number | null>(null);
 
     // Typing indicators
     const handleUserTyping = (data: { userId: string; username: string; channelId: number }) => {
+      console.log('Received typing event:', data); // DEBUG
       if (data.channelId === channelId && data.username !== user?.username) {
         setTypingUsers((prev) => {
           if (!prev.includes(data.username)) {
+            console.log('Adding typing user:', data.username); // DEBUG
             return [...prev, data.username];
           }
           return prev;
@@ -96,8 +99,12 @@ const typingTimeoutRef = useRef<number | null>(null);
     };
 
     const handleUserStoppedTyping = (data: { userId: string; username: string; channelId: number }) => {
+      console.log('Received stopped typing event:', data); // DEBUG
       if (data.channelId === channelId) {
-        setTypingUsers((prev) => prev.filter((username) => username !== data.username));
+        setTypingUsers((prev) => {
+          console.log('Removing typing user:', data.username); // DEBUG
+          return prev.filter((username) => username !== data.username);
+        });
       }
     };
 
@@ -106,14 +113,16 @@ const typingTimeoutRef = useRef<number | null>(null);
     socket.on('user-typing', handleUserTyping);
     socket.on('user-stopped-typing', handleUserStoppedTyping);
 
-    // LEARNING: Cleanup - Remove listeners
-    // Prevents memory leaks and duplicate handlers
     return () => {
+      if (isTypingRef.current) {
+        socket.emit('typing-stop', { channelId });
+        isTypingRef.current = false;
+      }
+      
       socket.off('new-message', handleNewMessage);
       socket.off('user-typing', handleUserTyping);
       socket.off('user-stopped-typing', handleUserStoppedTyping);
       
-      // Clear typing timeout on unmount
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -185,15 +194,20 @@ const typingTimeoutRef = useRef<number | null>(null);
 
     // Only emit if user is actually typing something
     if (value.trim()) {
-      socket.emit('typing-start', { channelId });
+      // Only emit typing-start if not already typing (prevents spam)
+      if (!isTypingRef.current) {
+        socket.emit('typing-start', { channelId });
+        isTypingRef.current = true;
+      }
 
-      // Set timeout to emit typing-stop after 2 seconds
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('typing-stop', { channelId });
-      }, 2000);
+      // Keep timeout running - don't auto-stop while user is typing
+      // Typing will only stop when: 1) User clears input, 2) User sends message, 3) User disconnects
     } else {
-      // If input is cleared, immediately stop typing
-      socket.emit('typing-stop', { channelId });
+      // REQUIREMENT: Stop typing ONLY when input is completely cleared
+      if (isTypingRef.current) {
+        socket.emit('typing-stop', { channelId });
+        isTypingRef.current = false;
+      }
     }
   };
 
@@ -216,13 +230,13 @@ const typingTimeoutRef = useRef<number | null>(null);
 
     // Stop typing indicator when sending
     socket.emit('typing-stop', { channelId });
+    isTypingRef.current = false; 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     try {
       // LEARNING: Socket.io for real-time messages
-      // Instead of API call, emit socket event directly
       socket.emit('send-message', {
         channelId,
         content: messageContent
@@ -290,21 +304,22 @@ const typingTimeoutRef = useRef<number | null>(null);
           />
         ))}
 
-        {/* LEARNING: Scroll anchor */}
         {/* Empty div at bottom for auto-scroll target */}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Typing Indicator */}
+      {/* TYPING INDICATOR SECTION - Discord Style */}
       {typingUsers.length > 0 && (
-        <div className="px-6 py-2 text-sm text-nature-600 dark:text-nature-400 font-sans italic animate-fade-in">
+        <div className="px-6 py-3 bg-nature-100 dark:bg-nature-900/30 border-t border-nature-200 dark:border-nature-800">
           <div className="flex items-center gap-2">
+            {/* Animated bouncing dots */}
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
               <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
               <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
             </div>
-            <span>
+            {/* Typing text */}
+            <span className="text-sm font-sans text-nature-700 dark:text-nature-300">
               {typingUsers.length === 1 
                 ? `${typingUsers[0]} is typing...`
                 : typingUsers.length === 2
