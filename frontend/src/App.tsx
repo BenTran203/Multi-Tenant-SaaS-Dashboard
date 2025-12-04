@@ -31,6 +31,7 @@ import { Chat } from './pages/Chat';
 import { ResetPassword } from './pages/ResetPassword';
 import { ForgotPass } from './pages/Forgotpass';
 import { Profile } from './pages/Profile';
+import { ServerSettings } from './pages/ServerSettings';
 
 /**
  * PROTECTED ROUTE COMPONENT
@@ -165,6 +166,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/server/:serverId/settings"
+        element={
+          <ProtectedRoute>
+            <ServerSettings />
           </ProtectedRoute>
         }
       />

@@ -63,14 +63,14 @@ export function MessageCard({ message, isOwn }: MessageCardProps) {
 
         {/* LEARNING: Timestamp */}
         {/* formatDistanceToNow converts date to "2 minutes ago" */}
-        <span className="text-xs text-nature-bark/50 dark:text-nature-stone font-sans">
+        <span className="text-xs text-nature-bark/50 dark:text-nature-stone font-pixel">
           {formatDistanceToNow(new Date(message.createdAt))}
         </span>
       </div>
 
       {/* LEARNING: Message Content */}
       <div className="pl-10">
-        <p className="text-nature-soil dark:text-nature-cream font-sans leading-relaxed">
+        <p className="text-nature-soil dark:text-nature-cream font-pixel leading-relaxed">
           {message.content}
         </p>
       </div>

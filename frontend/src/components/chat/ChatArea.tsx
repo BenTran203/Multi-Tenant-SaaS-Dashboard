@@ -339,7 +339,7 @@ export function ChatArea({ channelId }: ChatAreaProps) {
             value={newMessage}
             onChange={handleInputChange}
             placeholder="Type a message... 🌿"
-            className="input-field flex-1"
+            className="input-field flex-1 font-pixel"
             disabled={sending}
             autoFocus
           />

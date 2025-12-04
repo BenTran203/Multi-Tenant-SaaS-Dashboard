@@ -45,6 +45,7 @@ export interface Server {
   id: number;
   name: string;
   icon?: string;            // Emoji or URL
+  theme?: string;           // Theme color scheme (nature, ocean, sunset)
   inviteCode: string;       // Unique code for joining
   ownerId: number;
   createdAt: string;

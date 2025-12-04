@@ -59,7 +59,7 @@ app.use(express.json());
 // Parse URL-encoded data (forms)
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting - Prevent abuse (100 requests per 15 minutes)
+// Rate limiting (100 requests per 15 minutes)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 50,

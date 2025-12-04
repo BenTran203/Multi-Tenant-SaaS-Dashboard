@@ -65,7 +65,7 @@ export default {
         fun: ['"Press Start 2P"', 'cursive'],
         
         // Readable pixel-style font
-        pixel: ['"Silkscreen"', 'monospace'],
+        pixel: ['"Pixelify Sans"', 'sans-serif'],
         
         // Fallback to clean sans-serif
         sans: ['Inter', 'system-ui', 'sans-serif'],

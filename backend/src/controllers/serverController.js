@@ -98,7 +98,7 @@ export const getUserServers = async (req, res) => {
     const servers = await prisma.server.findMany({
       where: {
         members: {
-          some: { userId: userId }, // "some" member has this userId
+          some: { userId: userId },
         },
       },
       include: {
@@ -189,7 +189,6 @@ export const getServerById = async (req, res) => {
 };
 
 /**
- * Join a server with invite code
  *
  * LOGIC:
  * 1. Find server by invite code.
@@ -252,6 +251,193 @@ export const joinServer = async (req, res) => {
     });
   }
 };
+
+/* 
+UPDATE SERVER (check if it's correct)
+*/
+
+export const updateServer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, icon, theme } = req.body;
+    const userId = req.user.id;
+
+    //Check if server exists and user is owner
+    const server = await prisma.server.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: "Server not found" });
+    }
+    if (server.ownerId !== userId) {
+      return res.status(403).json({
+        message: "Only the server owner can update settings",
+      });
+    }
+    const updateServer = await prisma.server.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...(name && { name }),
+        ...(icon !== undefined && { icon }),
+        ...(theme && { theme }),
+      },
+    });
+    res.json({
+      server: updatedServer,
+      message: "Server updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* 
+DELETE SERVER (check if it's correct)
+*/
+
+export const deleteServer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, icon, theme } = req.body;
+    const userId = req.user.id;
+
+    //Check if server exists and user is owner
+    const server = await prisma.server.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: "Server not found" });
+    }
+    if (server.ownerId !== userId) {
+      return res.status(403).json({
+        message: "Only the server owner can delete",
+      });
+    }
+    const updateServer = await prisma.server.delete({
+      where: { id: parseInt(id) },
+      data: {
+        ...(name && { name }),
+        ...(icon !== undefined && { icon }),
+        ...(theme && { theme }),
+      },
+    });
+    res.json({
+      server: updatedServer,
+      message: "Server delete successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* 
+GET SERVER MEMBER (check if it's correct)
+*/
+export const getServerMember = async (req, res, next) => {
+  try {
+    const { serverId } = req.params;
+    const userId = req.user.id;
+    const membership = await prisma.user.findUnique({
+      where: {
+        userId_serverId: {
+          userId,
+          serverId: parseInt(serveId),
+        },
+      },
+    });
+    if (!membership) {
+      return res.status(403).json({
+        message: "You are not a member of this server",
+      });
+    }
+
+    const members = await prisma.user.findMany({
+      where: { serverId: parseInt(serverId) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            password: false,
+          },
+        },
+      },
+      orderBy: {
+        joinedAt: "asc",
+      },
+    });
+    res.json({ 
+      members,
+      count: members.length
+    });
+  } catch (error) {
+    next(errors)
+  }
+};
+
+
+exports.kickMember = async (req, res, next) => {
+  try {
+    const { serverId, memberId } = req.params;
+    const userId = req.user.id;
+
+    // LEARNING: Verify user is the server owner
+    const server = await prisma.server.findUnique({
+      where: { id: parseInt(serverId) }
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: 'Server not found' });
+    }
+
+    if (server.ownerId !== userId) {
+      return res.status(403).json({ 
+        message: 'Only the server owner can kick members' 
+      });
+    }
+
+    // LEARNING: Fetch the member to be kicked
+    const member = await prisma.serverMember.findUnique({
+      where: { id: parseInt(memberId) }
+    });
+
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
+
+    // LEARNING: Cannot kick the server owner
+    if (member.userId === server.ownerId) {
+      return res.status(400).json({ 
+        message: 'Cannot kick the server owner' 
+      });
+    }
+
+    // LEARNING: Delete the membership
+    await prisma.serverMember.delete({
+      where: { id: parseInt(memberId) }
+    });
+
+    res.json({ 
+      message: 'Member got kicked ' 
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+
+
+
+
+
+
 
 /**
  * CHALLENGE: Implement these functions yourself!

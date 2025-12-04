@@ -48,6 +48,7 @@ model Server {
   id         String   @id @default(uuid())
   name       String
   iconUrl    String?  @map("icon_url")
+  theme      String? @default("nature")
   inviteCode String   @unique @default(uuid()) @map("invite_code") // Unique code for inviting users
   ownerId    String   @map("owner_id")                              // Foreign Key to User
   createdAt  DateTime @default(now()) @map("created_at")
@@ -71,6 +72,7 @@ model ServerMember {
   role     MemberRole   @default(MEMBER) // ADMIN or MEMBER
   userId   String       @map("user_id")
   serverId String       @map("server_id")
+  nickname String? 
   joinedAt DateTime     @default(now()) @map("joined_at")
 
   // LEARNING: RELATIONSHIPS

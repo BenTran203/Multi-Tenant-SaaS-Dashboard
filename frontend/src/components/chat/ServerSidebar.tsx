@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Hash } from 'lucide-react';
+import { Plus, Hash, Settings } from 'lucide-react';
 import { Server, User } from '../../types';
 import { api } from '../../services/api';
 import { Input } from '../ui/Input';
@@ -100,21 +100,36 @@ export function ServerSidebar({
         {/* LEARNING: Scrollable Server List */}
         <div className="flex-1 overflow-y-auto w-full flex flex-col items-center gap-3 px-2">
           {servers.map((server) => (
-            <button
-              key={server.id}
-              onClick={() => onServerSelect(server.id)}
-              className={`
-                w-12 h-12 rounded-2xl flex items-center justify-center text-2xl
-                transition-all duration-200 hover:scale-110
-                ${selectedServerId === server.id 
-                  ? 'bg-grass-500 shadow-lg scale-110' 
-                  : 'bg-oak-100 dark:bg-oak-900/30 hover:bg-oak-200 dark:hover:bg-oak-900/50'
-                }
-              `}
-              title={server.name}
-            >
-              {server.icon || <Hash size={24} />}
-            </button>
+            <div key={server.id} className="relative group">
+              <button
+                onClick={() => onServerSelect(server.id)}
+                className={`
+                  w-12 h-12 rounded-2xl flex items-center justify-center text-2xl
+                  transition-all duration-200 hover:scale-110
+                  ${selectedServerId === server.id 
+                    ? 'bg-grass-500 shadow-lg scale-110' 
+                    : 'bg-oak-100 dark:bg-oak-900/30 hover:bg-oak-200 dark:hover:bg-oak-900/50'
+                  }
+                `}
+                title={server.name}
+              >
+                {server.icon || <Hash size={24} />}
+              </button>
+              
+              {/* Settings Icon - Only show for selected server and if user is owner */}
+              {selectedServerId === server.id && server.ownerId === user?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/server/${server.id}/settings`);
+                  }}
+                  className="absolute -right-1 -top-1 w-6 h-6 bg-grass-600 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-grass-700"
+                  title="Server Settings"
+                >
+                  <Settings size={14} />
+                </button>
+              )}
+            </div>
           ))}
         </div>
 
