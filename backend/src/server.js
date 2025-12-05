@@ -12,7 +12,7 @@
  */
 
 import express from 'express';
-import { createWebServer } from './utils/serverFactory.js'; // Import the helper
+import { createWebServer } from './utils/serverFactory.js';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -23,11 +23,10 @@ import userRoutes from './routes/userRoutes.js'
 import serverRoutes from './routes/serverRoutes.js';
 import channelRoutes from './routes/channelRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';// Import middleware
-import { setupSocketHandlers, setupPresenceHandlers } from './socket/socketHandlers.js'; // Import socket handlers
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { setupSocketHandlers, setupPresenceHandlers } from './socket/socketHandlers.js';
 dotenv.config();
 const app = express();
-// HTTPS Support 
 const httpServer = createWebServer(app);
 
 // ============================================
@@ -47,7 +46,7 @@ console.log('Socket.io server created!');
 // MIDDLEWARE
 // ============================================
 
-// CORS - Allow frontend to make requests
+// CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true

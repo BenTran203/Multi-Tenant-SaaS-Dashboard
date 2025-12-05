@@ -2,10 +2,6 @@
  * ============================================================================
  * SERVER ROUTES
  * ============================================================================
- * 
- * CONCEPT: Protected Routes
- * All routes in this file require the user to be logged in.
- * We use the `authenticate` middleware to enforce this.
  */
 
 import express from 'express';
@@ -13,7 +9,12 @@ import {
   createServer,
   getUserServers,
   getServerById,
-  joinServer
+  joinServer,
+  updateServer,
+  deleteServer,
+  getServerMember,
+  kickMember,
+  updateMemberNickname
 } from '../controllers/serverController.js';
 import { authenticate } from '../middleware/auth.js';
 import {
@@ -24,11 +25,7 @@ import {
 
 const router = express.Router();
 
-// LEARNING: All routes below require authentication
-// We could use router.use(authenticate) to apply to all routes
-
 /**
- * POST /api/servers
  * Create a new server
  */
 router.post(
@@ -40,7 +37,6 @@ router.post(
 );
 
 /**
- * GET /api/servers
  * Get all servers the user is a member of
  */
 router.get(
@@ -50,7 +46,6 @@ router.get(
 );
 
 /**
- * GET /api/servers/:id
  * Get a specific server by ID
  */
 router.get(
@@ -60,7 +55,6 @@ router.get(
 );
 
 /**
- * POST /api/servers/join
  * Join a server with invite code
  */
 router.post(
@@ -70,6 +64,16 @@ router.post(
   handleValidationErrors,
   joinServer
 );
+
+//Delete server
+router.delete('/:id', authenticate, deleteServer)
+
+//Server setting routes
+router.put('/:id', authenticate, updateServer);
+router.get('/:serverId/members', authenticate, getServerMember);
+router.delete('/:serverId/members/:memberId', authenticate, kickMember);
+router.patch('/:serverId/members/:memberId/nickname', authenticate, updateMemberNickname);
+
 
 export default router;
 
