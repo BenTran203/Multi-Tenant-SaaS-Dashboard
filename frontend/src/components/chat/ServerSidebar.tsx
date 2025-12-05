@@ -117,18 +117,7 @@ export function ServerSidebar({
               </button>
               
               {/* Settings Icon - Only show for selected server and if user is owner */}
-              {selectedServerId === server.id && server.ownerId === user?.id && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/server/${server.id}/settings`);
-                  }}
-                  className="absolute -right-1 -top-1 w-6 h-6 bg-grass-600 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-grass-700"
-                  title="Server Settings"
-                >
-                  <Settings size={14} />
-                </button>
-              )}
+
             </div>
           ))}
         </div>

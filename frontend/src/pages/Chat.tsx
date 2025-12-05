@@ -179,8 +179,11 @@ export function Chat() {
           serverId={selectedServerId}
           channels={channels}
           selectedChannelId={selectedChannelId}
+          servers={servers}
+          selectedServerId={selectedServerId}
           onChannelSelect={handleChannelSelect}
           onChannelCreated={(newChannel) => setChannels([...channels, newChannel])}
+          user={user}
         />
       )}
 
