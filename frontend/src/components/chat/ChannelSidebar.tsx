@@ -19,12 +19,12 @@ import { useNavigate } from "react-router-dom";
 import { Server, User } from "../../types";
 
 interface ChannelSidebarProps {
-  serverId: number;
+  serverId: string;
   channels: Channel[];
-  selectedChannelId: number | null;
+  selectedChannelId: string | null;
   servers: Server[];
-  selectedServerId: number | null;
-  onChannelSelect: (channelId: number) => void;
+  selectedServerId: string | null;
+  onChannelSelect: (channelId: string) => void;
   onChannelCreated: (channel: Channel) => void;
   user: User | null;
 }
@@ -100,7 +100,7 @@ export function ChannelSidebar({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/server/${server.id}/settings`);
+                navigate(`/server/${selectedServerId}/settings`);
               }}
               className="p-2 hover:bg-nature-stone dark:hover:bg-dark-hover rounded-xl transition-colors"
               title="Server Settings"

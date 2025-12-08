@@ -15,6 +15,29 @@
 import { prisma } from "../config/database.js";
 import { verifyToken } from "../config/jwt.js";
 
+const onlineUsersByServer = new Map();
+
+function addUserPresence(serverId, userId) {
+  if (!onlineUsersByServer.has(serverId)) {
+    onlineUsersByServer.set(serverId, new Set());
+  }
+  onlineUsersByServer.get(serverId).add(userId);
+}
+
+function removeUserPresence(serverId, userId) {
+  const users = onlineUsersByServer.get(serverId);
+  if (users) {
+    users.delete(userId);
+    if (users.size === 0) {
+      onlineUsersByServer.delete(serverId);
+    }
+  }
+}
+
+function getOnlineUsers(serverId) {
+  return Array.from(onlineUsersByServer.get(serverId) || []);
+}
+
 export const setupSocketHandlers = (io) => {
   // ============================================
   // AUTHENTICATION MIDDLEWARE
@@ -56,8 +79,50 @@ export const setupSocketHandlers = (io) => {
   // CONNECTION HANDLER
   // ============================================
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log(`✅ User connected: ${socket.user.username} (${socket.id})`);
+
+    // --------------------------------------------
+    // JOIN SERVER
+    // --------------------------------------------
+    socket.on("join-server", async ({ serverId }) => {
+      try {
+        // Verify user is a member of the server
+        const member = await prisma.serverMember.findUnique({
+          where: {
+            userId_serverId: {
+              userId: socket.user.id,
+              serverId: serverId,
+            },
+          },
+        });
+
+        if (!member) {
+          socket.emit("error", { message: "Not a member of this server" });
+          return;
+        }
+
+        // Join the Socket.io room for this server
+        socket.join(`server-${serverId}`);
+        addUserPresence(serverId, socket.user.id);
+
+        // Send current online users to the joining user
+        const onlineUsers = getOnlineUsers(serverId);
+        socket.emit("presence-update", { serverId, onlineUsers });
+
+        // Notify others in the server that this user came online
+        socket.to(`server-${serverId}`).emit("user-online", {
+          userId: socket.user.id,
+          username: socket.user.username,
+          avatarUrl: socket.user.avatarUrl,
+        });
+
+        console.log(`🟢 ${socket.user.username} joined server ${serverId}`);
+      } catch (error) {
+        console.error("join-server error:", error);
+        socket.emit("error", { message: "Failed to join server" });
+      }
+    });
 
     // --------------------------------------------
     // JOIN CHANNEL
@@ -319,11 +384,19 @@ export const setupSocketHandlers = (io) => {
     // --------------------------------------------
     // DISCONNECT
     // --------------------------------------------
-    // 🔨 TODO: Broadcast user presence status to channel members
     socket.on("disconnect", () => {
-      console.log(
-        `❌ User disconnected: ${socket.user.username} (${socket.id})`
-      );
+      console.log(`❌ User disconnected: ${socket.user.username} (${socket.id})`);
+      
+      // Remove user from all servers they were in
+      onlineUsersByServer.forEach((users, serverId) => {
+        if (users.has(socket.user.id)) {
+          removeUserPresence(serverId, socket.user.id);
+          io.to(`server-${serverId}`).emit("user-offline", {
+            userId: socket.user.id,
+          });
+          console.log(`🔴 ${socket.user.username} left server ${serverId}`);
+        }
+      });
     });
   });
 };

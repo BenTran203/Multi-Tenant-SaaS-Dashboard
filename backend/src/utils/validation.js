@@ -8,12 +8,6 @@
  * 2. Data integrity: Ensure data matches expected format
  * 3. Better UX: Return helpful error messages
  *
- * USING EXPRESS-VALIDATOR:
- * - Define validation rules
- * - Check for errors
- * - Return errors to client
- *
- * DOCS: https://express-validator.github.io/docs/
  */
 
 import { body, param, validationResult } from "express-validator";
@@ -32,7 +26,6 @@ import { body, param, validationResult } from "express-validator";
  * );
  */
 export const handleValidationErrors = (req, res, next) => {
-  // LEARNING: Get validation errors from request
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {

@@ -22,12 +22,12 @@
 // ============================================
 
 export interface User {
-  id: number;               // Numeric ID from database
+  id: string;               // UUID from database (not numeric!)
   email: string;
   username: string;
   password?: string;        // Optional, never sent from backend
   avatarUrl?: string;       // Optional avatar URL
-  bio?: string;             // Optional user bio (to be added)
+  bio?: string;             // Optional user bio
   createdAt: string;        // ISO date string
 }
 
@@ -42,12 +42,12 @@ export interface AuthResponse {
 // ============================================
 
 export interface Server {
-  id: number;
+  id: string;               // UUID from database
   name: string;
   icon?: string;            // Emoji or URL
   theme?: string;           // Theme color scheme (nature, ocean, sunset)
   inviteCode: string;       // Unique code for joining
-  ownerId: number;
+  ownerId: string;          // UUID reference to User
   createdAt: string;
   server?: { name: string }; // Sometimes backend includes this
 }
@@ -57,10 +57,10 @@ export interface Server {
 // ============================================
 
 export interface Channel {
-  id: number;
+  id: string;               // UUID from database
   name: string;
   type: string;             // 'text' or 'voice'
-  serverId: number;
+  serverId: string;         // UUID reference to Server
   createdAt: string;
   server?: Server;          // Optional, included in some responses
 }
@@ -70,10 +70,10 @@ export interface Channel {
 // ============================================
 
 export interface Message {
-  id: number;
+  id: string;               // UUID from database
   content: string;
-  userId: number;
-  channelId: number;
+  userId: string;           // UUID reference to User
+  channelId: string;        // UUID reference to Channel
   createdAt: string;
   user?: User;              // Included with message responses
 }

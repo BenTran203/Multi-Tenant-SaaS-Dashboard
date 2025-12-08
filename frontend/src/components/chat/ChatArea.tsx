@@ -24,7 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MessageCard } from './MessageCard';
 
 interface ChatAreaProps {
-  channelId: number;
+  channelId: string;  // UUID of the channel
 }
 
 /**
@@ -85,7 +85,7 @@ export function ChatArea({ channelId }: ChatAreaProps) {
     };
 
     // Typing indicators
-    const handleUserTyping = (data: { userId: string; username: string; channelId: number }) => {
+    const handleUserTyping = (data: { userId: string; username: string; channelId: string }) => {
       console.log('Received typing event:', data); // DEBUG
       if (data.channelId === channelId && data.username !== user?.username) {
         setTypingUsers((prev) => {
@@ -98,7 +98,7 @@ export function ChatArea({ channelId }: ChatAreaProps) {
       }
     };
 
-    const handleUserStoppedTyping = (data: { userId: string; username: string; channelId: number }) => {
+    const handleUserStoppedTyping = (data: { userId: string; username: string; channelId: string }) => {
       console.log('Received stopped typing event:', data); // DEBUG
       if (data.channelId === channelId) {
         setTypingUsers((prev) => {

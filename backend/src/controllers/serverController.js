@@ -4,14 +4,10 @@
  * ============================================================================
  * 
  */
-
-
 import { prisma } from "../config/database.js";
 
 
-/**
- * Create a new server
- */
+// Create Server
 export const createServer = async (req, res) => {
   try {
     const { name, icon } = req.body;
@@ -62,9 +58,7 @@ export const createServer = async (req, res) => {
   }
 };
 
-/**
- * Get all servers the user is a member of
- */
+// Get server users
 export const getUserServers = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -94,9 +88,7 @@ export const getUserServers = async (req, res) => {
   }
 };
 
-/**
- * Get a specific server by ID
- */
+// Get servert Id
 export const getServerById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,9 +146,8 @@ export const getServerById = async (req, res) => {
   }
 };
 
-/**
- * Join server function
- */
+// Join server function
+ 
 export const joinServer = async (req, res) => {
   try {
     const { inviteCode } = req.body;
@@ -278,12 +269,13 @@ export const deleteServer = async (req, res, next) => {
   }
 };
 
-// Get all members of a server
+// Get a members of a server
 export const getServerMember = async (req, res, next) => {
   try {
     const { serverId } = req.params;
     const userId = req.user.id;
 
+    //Find 1 member
     const membership = await prisma.serverMember.findUnique({
       where: {
         userId_serverId: {
@@ -299,6 +291,7 @@ export const getServerMember = async (req, res, next) => {
       });
     }
 
+    //Find All members
     const members = await prisma.serverMember.findMany({
       where: { serverId },
       include: {

@@ -1,12 +1,12 @@
 /**
  * 💬 CHAT PAGE - Main Application Interface
- * 
+ *
  * LEARNING: Complex Layout with Multiple Components
  * - Slack-style 3-column layout
  * - Server sidebar (left) → Channel list (middle) → Chat area (right)
  * - Real-time message updates with Socket.io
  * - State management across multiple components
- * 
+ *
  * LAYOUT STRUCTURE:
  * ┌──────┬─────────┬────────────────┐
  * │Server│Channels │  Chat Messages │
@@ -15,18 +15,19 @@
  * └──────┴─────────┴────────────────┘
  */
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { ServerSidebar } from '../components/chat/ServerSidebar';
-import { ChannelSidebar } from '../components/chat/ChannelSidebar';
-import { ChatArea } from '../components/chat/ChatArea';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
-import { api } from '../services/api';
-import { Server, Channel } from '../types';
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { ServerSidebar } from "../components/chat/ServerSidebar";
+import { ChannelSidebar } from "../components/chat/ChannelSidebar";
+import { UserListSidebar } from "../components/chat/UserListSidebar";
+import { ChatArea } from "../components/chat/ChatArea";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
+import { api } from "../services/api";
+import { Server, Channel, User } from "../types";
 
 /**
  * CHAT COMPONENT
- * 
+ *
  * Main container for the entire chat interface
  */
 export function Chat() {
@@ -34,19 +35,22 @@ export function Chat() {
 
   // LEARNING: State Management for Chat
   // - servers: List of servers user belongs to
-  // - selectedServerId: Currently selected server
-  // - selectedChannelId: Currently selected channel
+  // - selectedServerId: Currently selected server (UUID string)
+  // - selectedChannelId: Currently selected channel (UUID string)
   // - channels: Channels in the selected server
-  
+
   const [servers, setServers] = useState<Server[]>([]);
-  const [selectedServerId, setSelectedServerId] = useState<number | null>(null);
-  const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
+  const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
+    null
+  );
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serverMembers, setServerMembers] = useState<User[]>([]);
 
   /**
    * LEARNING: Data Fetching on Mount
-   * 
+   *
    * useEffect with empty dependency array runs once on component mount
    * - Fetch user's servers from API
    * - Select first server by default
@@ -57,7 +61,7 @@ export function Chat() {
 
   /**
    * LEARNING: Dependent Data Fetching
-   * 
+   *
    * When selectedServerId changes, fetch channels for that server
    * - useEffect with [selectedServerId] dependency
    * - Runs whenever selectedServerId updates
@@ -68,9 +72,23 @@ export function Chat() {
     }
   }, [selectedServerId]);
 
+  // Fetch server members for presence sidebar
+  useEffect(() => {
+    if (selectedServerId) {
+      api
+        .get(`/api/servers/${selectedServerId}/members`)
+        .then((res) => {
+          // Extract user objects from ServerMember structure
+          const users = res.data.members.map((member: any) => member.user);
+          setServerMembers(users);
+        })
+        .catch((err) => console.error("Failed to fetch members:", err));
+    }
+  }, [selectedServerId]);
+
   /**
    * FETCH SERVERS
-   * 
+   *
    * LEARNING: API Call Pattern
    * - GET request to backend
    * - Update state with response
@@ -79,7 +97,7 @@ export function Chat() {
   const fetchServers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/servers');
+      const response = await api.get("/api/servers");
       const serverList = response.data.servers;
       setServers(serverList);
 
@@ -88,7 +106,7 @@ export function Chat() {
         setSelectedServerId(serverList[0].id);
       }
     } catch (error) {
-      console.error('Failed to fetch servers:', error);
+      console.error("Failed to fetch servers:", error);
     } finally {
       setLoading(false);
     }
@@ -96,12 +114,12 @@ export function Chat() {
 
   /**
    * FETCH CHANNELS
-   * 
+   *
    * Get all channels for a specific server
-   * 
-   * @param serverId - ID of server to fetch channels for
+   *
+   * @param serverId - UUID of server to fetch channels for
    */
-  const fetchChannels = async (serverId: number) => {
+  const fetchChannels = async (serverId: string) => {
     try {
       const response = await api.get(`/api/servers/${serverId}/channels`);
       const channelList = response.data.channels;
@@ -112,29 +130,31 @@ export function Chat() {
         setSelectedChannelId(channelList[0].id);
       }
     } catch (error) {
-      console.error('Failed to fetch channels:', error);
+      console.error("Failed to fetch channels:", error);
     }
   };
 
+  // Fetch server members for presence sidebar
+
   /**
    * LEARNING: Event Handlers
-   * 
+   *
    * Functions passed as props to child components
    * - Child components call these to update parent state
    * - This is called "lifting state up"
    */
-  const handleServerSelect = (serverId: number) => {
+  const handleServerSelect = (serverId: string) => {
     setSelectedServerId(serverId);
-    setSelectedChannelId(null); 
+    setSelectedChannelId(null);
   };
 
-  const handleChannelSelect = (channelId: number) => {
+  const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId);
   };
 
   /**
    * LEARNING: Callback Function Pattern
-   * 
+   *
    * When a new server is created, add it to the list
    * Passed to ServerSidebar component
    */
@@ -144,8 +164,6 @@ export function Chat() {
   };
 
   /**
-   * LEARNING: Loading State
-   * 
    * Show loading spinner while fetching data
    */
   if (loading) {
@@ -153,7 +171,9 @@ export function Chat() {
       <div className="h-screen flex items-center justify-center bg-nature-cream dark:bg-dark-bg">
         <div className="text-center">
           <div className="animate-bounce-gentle text-4xl mb-4">🌿</div>
-          <p className="font-pixel text-grass-600 dark:text-grass-400">Loading...</p>
+          <p className="font-pixel text-grass-600 dark:text-grass-400">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -161,9 +181,6 @@ export function Chat() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-nature-cream dark:bg-dark-bg">
-      
-
-      
       {/* 1️⃣ LEFT SIDEBAR: Server List (narrow) */}
       <ServerSidebar
         servers={servers}
@@ -172,7 +189,6 @@ export function Chat() {
         onServerCreated={handleServerCreated}
         user={user}
       />
-
       {/* 2️⃣ MIDDLE SIDEBAR: Channel List */}
       {selectedServerId && (
         <ChannelSidebar
@@ -182,11 +198,12 @@ export function Chat() {
           servers={servers}
           selectedServerId={selectedServerId}
           onChannelSelect={handleChannelSelect}
-          onChannelCreated={(newChannel) => setChannels([...channels, newChannel])}
+          onChannelCreated={(newChannel) =>
+            setChannels([...channels, newChannel])
+          }
           user={user}
         />
       )}
-
       {/* 3️⃣ RIGHT AREA: Chat Messages + Input */}
       <div className="flex-1 flex flex-col relative">
         {/* Header with theme toggle and logout */}
@@ -194,7 +211,7 @@ export function Chat() {
           <div>
             {selectedChannelId && (
               <h2 className="font-pixel text-lg text-grass-600 dark:text-grass-400">
-                # {channels.find(c => c.id === selectedChannelId)?.name}
+                # {channels.find((c) => c.id === selectedChannelId)?.name}
               </h2>
             )}
           </div>
@@ -228,13 +245,16 @@ export function Chat() {
           </div>
         )}
       </div>
+      {selectedServerId && (
+        <UserListSidebar serverId={selectedServerId} members={serverMembers} />
+      )}{" "}
     </div>
   );
 }
 
 /**
  * KEY CONCEPTS:
- * 
+ *
  * 1. State Management - Multiple related states (servers, channels, selection)
  * 2. Data Fetching - useEffect for API calls
  * 3. Parent-Child Communication - Props and callbacks
@@ -243,4 +263,3 @@ export function Chat() {
  * 6. Layout with Flexbox - 3-column responsive layout
  * 7. Empty States - Friendly UI when no data
  */
-

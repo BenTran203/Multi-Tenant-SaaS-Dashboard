@@ -19,8 +19,8 @@ import { Button } from '../ui/Button';
 
 interface ServerSidebarProps {
   servers: Server[];
-  selectedServerId: number | null;
-  onServerSelect: (serverId: number) => void;
+  selectedServerId: string | null;
+  onServerSelect: (serverId: string) => void;
   onServerCreated: (server: Server) => void;
   user: User | null;
 }

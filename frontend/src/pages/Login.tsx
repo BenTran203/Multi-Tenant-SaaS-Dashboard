@@ -34,10 +34,12 @@ export function Login() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorType, setErrorType] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setErrorType(null);
 
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
@@ -50,9 +52,11 @@ export function Login() {
       await login(formData.email, formData.password);
       navigate("/chat");
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Login failed. Please try again."
-      );
+      const errorMessage = err.response?.data?.error || "Login failed. Please try again.";
+      const errorCategory = err.response?.data?.errorType || null;
+      
+      setError(errorMessage);
+      setErrorType(errorCategory);
     } finally {
       setLoading(false);
     }
@@ -92,9 +96,28 @@ export function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl animate-wiggle">
-              <p className="text-red-600 dark:text-red-400 text-sm font-sans">
+              <p className="text-red-600 dark:text-red-400 text-sm font-sans font-semibold mb-1">
                 {error}
               </p>
+              
+              {/* Helpful suggestions based on error type */}
+              {errorType === "EMAIL_NOT_FOUND" && (
+                <p className="text-red-500 dark:text-red-300 text-xs font-sans mt-2">
+                  💡 Tip: Double-check your email or{" "}
+                  <Link to="/register" className="underline font-semibold">
+                    create an account
+                  </Link>
+                </p>
+              )}
+              
+              {errorType === "INVALID_PASSWORD" && (
+                <p className="text-red-500 dark:text-red-300 text-xs font-sans mt-2">
+                  💡 Tip: Check Caps Lock or{" "}
+                  <Link to="/forgot-password" className="underline font-semibold">
+                    reset your password
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 

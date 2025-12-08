@@ -114,10 +114,13 @@ export const login = async (req, res) => {
       where: { email },
     });
 
-    // Security: Use generic error message to prevent user enumeration
+    // SECURITY NOTE: Specific error messages
+    // Trade-off: Better UX vs User Enumeration risk
+    // Mitigation: Rate limiting + account lockout (recommended for production)
     if (!user) {
       return res.status(401).json({
-        error: "Invalid email or password",
+        error: "No account found with this email address",
+        errorType: "EMAIL_NOT_FOUND",
       });
     }
 
@@ -127,7 +130,8 @@ export const login = async (req, res) => {
 
     if (!isPasswordValid) {
       return res.status(401).json({
-        error: "Invalid email or password",
+        error: "Incorrect password. Please try again.",
+        errorType: "INVALID_PASSWORD",
       });
     }
 
