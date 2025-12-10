@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { Save, Image } from 'lucide-react';
+import { Save, Copy, Check, RefreshCw } from 'lucide-react';
 import { Server } from '../../types';
 import { api } from '../../services/api';
 import { Input } from '../ui/Input';
@@ -61,12 +61,14 @@ const THEME_OPTIONS = [
  */
 export function ServerGeneralSettings({ server, onUpdate }: ServerGeneralSettingsProps) {
   const [name, setName] = useState(server.name);
-  const [icon, setIcon] = useState(server.icon || '🌿');
-  const [theme, setTheme] = useState('nature'); // Default theme
+  const [icon, setIcon] = useState(server.icon || '\ud83c\udf3f');
+  const [theme, setTheme] = useState(server.theme || 'nature'); // Get theme from server
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [copied, setCopied] = useState(false); // For copy button feedback
+  const [regenerating, setRegenerating] = useState(false); // For code regeneration
 
   /**
    * HANDLE SAVE
@@ -105,6 +107,49 @@ export function ServerGeneralSettings({ server, onUpdate }: ServerGeneralSetting
     }
   };
 
+  /**
+   * COPY SERVER CODE
+   * 
+   * Copies 8-character server code to clipboard
+   */
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(server.serverCode || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  /**
+   * REGENERATE SERVER CODE
+   * 
+   * Manually regenerate server code (owner only)
+   */
+  const handleRegenerateCode = async () => {
+    if (!confirm('Are you sure you want to regenerate the server code? The old code will no longer work.')) {
+      return;
+    }
+
+    setRegenerating(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await api.post(`/api/servers/${server.id}/regenerate-code`);
+      const updatedServer = response.data.server;
+      onUpdate(updatedServer);
+      setSuccess('Server code regenerated successfully! 🔄');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('Failed to regenerate code:', err);
+      setError(err.response?.data?.message || 'Failed to regenerate code');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <div className="card p-6 space-y-6">
       <div>
@@ -140,6 +185,52 @@ export function ServerGeneralSettings({ server, onUpdate }: ServerGeneralSetting
           onChange={(e) => setName(e.target.value)}
           disabled={saving}
         />
+      </div>
+
+      {/* SERVER CODE SECTION */}
+      <div>
+        <label className="block text-sm font-pixel text-nature-bark dark:text-nature-cream mb-2">
+          Server Code
+        </label>
+        <div className="flex items-center gap-3">
+          {/* Code Display */}
+          <div className="flex-1 p-4 bg-nature-100 dark:bg-nature-900/30 rounded-2xl border-2 border-nature-200 dark:border-nature-800">
+            <div className="flex items-center justify-between">
+              <code className="text-2xl font-pixel text-grass-600 dark:text-grass-400 tracking-wider">
+                {server.serverCode || 'N/A'}
+              </code>
+              <div className="flex gap-2">
+                {/* Copy Button */}
+                <button
+                  onClick={handleCopyCode}
+                  className="p-2 rounded-xl bg-grass-100 dark:bg-grass-900/30 hover:bg-grass-200 dark:hover:bg-grass-900/50 transition-all duration-200 hover:scale-110"
+                  title="Copy code"
+                >
+                  {copied ? (
+                    <Check size={18} className="text-grass-600 dark:text-grass-400" />
+                  ) : (
+                    <Copy size={18} className="text-grass-600 dark:text-grass-400" />
+                  )}
+                </button>
+                {/* Regenerate Button */}
+                <button
+                  onClick={handleRegenerateCode}
+                  disabled={regenerating}
+                  className="p-2 rounded-xl bg-oak-100 dark:bg-oak-900/30 hover:bg-oak-200 dark:hover:bg-oak-900/50 transition-all duration-200 hover:scale-110 disabled:opacity-50"
+                  title="Regenerate code"
+                >
+                  <RefreshCw 
+                    size={18} 
+                    className={`text-oak-600 dark:text-oak-400 ${regenerating ? 'animate-spin' : ''}`} 
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-nature-bark/60 dark:text-nature-stone mt-2">
+          Share this code with others to invite them to your server. Code regenerates automatically every hour.
+        </p>
       </div>
 
       {/* SERVER AVATAR (EMOJI PICKER) */}

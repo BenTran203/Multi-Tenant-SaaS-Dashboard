@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Hash, Settings } from 'lucide-react';
+import { Plus, Hash } from 'lucide-react';
 import { Server, User } from '../../types';
 import { api } from '../../services/api';
 import { Input } from '../ui/Input';
@@ -38,18 +38,22 @@ export function ServerSidebar({
   
   const navigate = useNavigate();
   
-  // Modal state for creating new server
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  // Modal state for creating/joining server
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'join'>('create'); // Toggle between create and join
   const [serverName, setServerName] = useState('');
+  const [serverCode, setServerCode] = useState(''); // For joining server
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   /**
    * CREATE SERVER HANDLER
    * 
    * LEARNING: POST request to create new server
    * - User becomes owner of the server
-   * - Server gets a unique invite code
+   * - Server gets a unique 8-character code
    */
   const handleCreateServer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +65,7 @@ export function ServerSidebar({
 
     setCreating(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const response = await api.post('/api/servers', {
@@ -69,15 +74,54 @@ export function ServerSidebar({
       });
 
       // Notify parent component
-      onServerCreated(response.data);
+      onServerCreated(response.data.server || response.data);
 
       // Reset and close modal
       setServerName('');
-      setShowCreateModal(false);
+      setShowModal(false);
+      setSuccessMessage('Server created successfully!');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create server');
     } finally {
       setCreating(false);
+    }
+  };
+
+  /**
+   * JOIN SERVER HANDLER
+   * 
+   * LEARNING: POST request to join server by code
+   * - Uses 8-character server code
+   * - Adds user as member
+   */
+  const handleJoinServer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!serverCode.trim() || serverCode.trim().length !== 8) {
+      setError('Server code must be 8 characters');
+      return;
+    }
+
+    setJoining(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const response = await api.post('/api/servers/join', {
+        serverCode: serverCode.toUpperCase()
+      });
+
+      // Notify parent component
+      onServerCreated(response.data.server);
+
+      // Reset and close modal
+      setServerCode('');
+      setShowModal(false);
+      setSuccessMessage(`Joined ${response.data.server.name}!`);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to join server');
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -124,64 +168,150 @@ export function ServerSidebar({
 
         {/* Add server button at bottom */}
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setShowModal(true);
+            setModalMode('create'); // Default to create mode
+          }}
           className="w-12 h-12 rounded-2xl bg-grass-100 dark:bg-grass-900/30 hover:bg-grass-200 dark:hover:bg-grass-900/50 flex items-center justify-center text-grass-600 dark:text-grass-400 transition-all duration-200 hover:scale-110 hover-bounce"
-          title="Create Server"
+          title="Create or Join Server"
         >
           <Plus size={24} />
         </button>
       </div>
 
-      {/* LEARNING: Modal for Creating Server */}
-      {/* Conditionally rendered based on showCreateModal state */}
-      {showCreateModal && (
+      {/* LEARNING: Modal for Creating/Joining Server */}
+      {/* Toggle between Create and Join modes */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-pop-in">
           <div className="card max-w-md w-full m-4">
+            {/* Header with mode */}
             <h2 className="text-xl font-pixel text-gradient-nature mb-4">
-              Create Server 🌿
+              {modalMode === 'create' ? 'Create Server 🌿' : 'Join Server 🚪'}
             </h2>
 
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-4 p-3 bg-grass-50 dark:bg-grass-900/20 border-2 border-grass-200 dark:border-grass-800 rounded-xl">
+                <p className="text-grass-600 dark:text-grass-400 text-sm">{successMessage}</p>
+              </div>
+            )}
+
+            {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl">
                 <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleCreateServer} className="space-y-4">
-              <Input
-                label="Server Name"
-                type="text"
-                placeholder="Nature Lovers"
-                value={serverName}
-                onChange={(e) => setServerName(e.target.value)}
-                disabled={creating}
-                autoFocus
-              />
+            {/* CREATE MODE */}
+            {modalMode === 'create' && (
+              <form onSubmit={handleCreateServer} className="space-y-4">
+                <Input
+                  label="Server Name"
+                  type="text"
+                  placeholder="Nature Lovers"
+                  value={serverName}
+                  onChange={(e) => setServerName(e.target.value)}
+                  disabled={creating}
+                  autoFocus
+                />
 
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setServerName('');
-                    setError('');
-                  }}
-                  disabled={creating}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={creating}
-                  className="flex-1"
-                >
-                  {creating ? 'Creating...' : 'Create'}
-                </Button>
-              </div>
-            </form>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowModal(false);
+                      setServerName('');
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    disabled={creating}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setModalMode('join');
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    disabled={creating}
+                    className="flex-1"
+                  >
+                    Join
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={creating}
+                    className="flex-1"
+                  >
+                    {creating ? 'Creating...' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {/* JOIN MODE */}
+            {modalMode === 'join' && (
+              <form onSubmit={handleJoinServer} className="space-y-4">
+                <Input
+                  label="Server Code"
+                  type="text"
+                  placeholder="A3K9M2P7"
+                  value={serverCode}
+                  onChange={(e) => setServerCode(e.target.value.toUpperCase())}
+                  disabled={joining}
+                  maxLength={8}
+                  autoFocus
+                />
+                <p className="text-xs text-nature-bark/60 dark:text-nature-stone">
+                  Enter the 8-character code to join a server
+                </p>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowModal(false);
+                      setServerCode('');
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    disabled={joining}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setModalMode('create');
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    disabled={joining}
+                    className="flex-1"
+                  >
+                    Create
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={joining || serverCode.length !== 8}
+                    className="flex-1"
+                  >
+                    {joining ? 'Joining...' : 'Join'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

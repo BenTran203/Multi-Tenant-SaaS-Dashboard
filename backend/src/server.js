@@ -2,7 +2,7 @@
  * ========================================
  * MAIN SERVER FILE - Entry Point
  * ========================================
- * 
+ *
  * Sets up:
  * - Express server (REST API)
  * - Socket.io (WebSocket for real-time)
@@ -11,20 +11,24 @@
  * - Error handling
  */
 
-import express from 'express';
-import { createWebServer } from './utils/serverFactory.js';
-import { Server } from 'socket.io';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import rateLimit from 'express-rate-limit';
-import { prisma } from './config/database.js';
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js'
-import serverRoutes from './routes/serverRoutes.js';
-import channelRoutes from './routes/channelRoutes.js';
-import messageRoutes from './routes/messageRoutes.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { setupSocketHandlers, setupPresenceHandlers } from './socket/socketHandlers.js';
+import express from "express";
+import { createWebServer } from "./utils/serverFactory.js";
+import { Server } from "socket.io";
+import cors from "cors";
+import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
+import { prisma } from "./config/database.js";
+import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import serverRoutes from "./routes/serverRoutes.js";
+import channelRoutes from "./routes/channelRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import startServerCodeCron from "./jobs/serverCodeCron.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import {
+  setupSocketHandlers,
+  setupPresenceHandlers,
+} from "./socket/socketHandlers.js";
 dotenv.config();
 const app = express();
 const httpServer = createWebServer(app);
@@ -32,25 +36,41 @@ const httpServer = createWebServer(app);
 // ============================================
 // Socket .io
 // ============================================
-console.log('Creating Socket.io server...');
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
-console.log('Socket.io server created!');
+
+try {
+  console.log("Creating Socket.io server...");
+  const io = new Server(httpServer, {
+    cors: {
+      origin: process.env.FRONTEND_URL || "http://localhost:5173",
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+  console.log("Socket.io server created!");
+} catch (error) {
+  console.log("Error creating socket server");
+}
+
+try {
+  startServerCodeCron();
+  console.log("✅ Server code regeneration cron job started");
+} catch (error) {
+  console.error("❌ Failed to start cron jobs:", error);
+  // Don't exit - cron failure shouldn't crash the entire server
+  //
+}
 
 // ============================================
 // MIDDLEWARE
 // ============================================
 
 // CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 // Parse JSON bodies
 app.use(express.json());
@@ -62,9 +82,9 @@ app.use(express.urlencoded({ extended: true }));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 50,
-  message: 'Too many requests from this IP, please try again later',
+  message: "Too many requests from this IP, please try again later",
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 // Request logging
@@ -78,23 +98,22 @@ app.use((req, res, next) => {
 // ============================================
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
 // API Routes
-app.use('/api/auth', limiter, authRoutes); //Apply limter to authentication
-app.use('/api/servers', serverRoutes);
-app.use('/api', channelRoutes);
-app.use('/api', messageRoutes); 
+app.use("/api/auth", limiter, authRoutes); //Apply limter to authentication
+app.use("/api/servers", serverRoutes);
+app.use("/api", channelRoutes);
+app.use("/api", messageRoutes);
 
 // app.use('/api/me', userProfile)
-app.use('/api/users', userRoutes);
-
+app.use("/api/users", userRoutes);
 
 // 404 handler (must be AFTER all routes)
 app.use(notFoundHandler);
@@ -106,10 +125,13 @@ app.use(errorHandler);
 // SOCKET.IO SETUP
 // ============================================
 
-console.log('Setting up Socket.io event handlers...');
-setupSocketHandlers(io);
-setupPresenceHandlers(io)
-console.log('Socket.io handlers ready!');
+try {
+  setupSocketHandlers(io);
+  setupPresenceHandlers(io);
+  console.log("Socket.io handlers ready!");
+} catch (error) {
+  console.error(" Failed to setup Socket.io handlers:", error);
+}
 
 // ============================================
 // DATABASE CONNECTION
@@ -118,9 +140,9 @@ console.log('Socket.io handlers ready!');
 const connectDatabase = async () => {
   try {
     await prisma.$connect();
-    console.log('Database connected successfully');
+    console.log("Database connected successfully");
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error("Database connection failed:", error);
     process.exit(1);
   }
 };
@@ -136,14 +158,13 @@ const startServer = async () => {
     await connectDatabase();
 
     httpServer.listen(PORT, () => {
-      console.log('\n🚀 Server is running!');
+      console.log("\n🚀 Server is running!");
       console.log(`📡 REST API: http://localhost:${PORT}`);
       console.log(`⚡ WebSocket: ws://localhost:${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
     });
-
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
@@ -151,22 +172,26 @@ const startServer = async () => {
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
-  
-  await prisma.$disconnect();
-  
+  try {
+    await prisma.$disconnect();
+    console.log("Database disconnected");
+  } catch (error) {
+    console.error("⚠️  Database disconnect failed:", error);
+  }
+
   httpServer.close(() => {
-    console.log('✅ Server closed');
+    console.log("✅ Server closed");
     process.exit(0);
   });
 
   setTimeout(() => {
-    console.error('❌ Forced shutdown after timeout');
+    console.error("❌ Forced shutdown after timeout");
     process.exit(1);
   }, 10000);
 };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();
 
@@ -176,7 +201,7 @@ startServer();
 
 /**
  * REQUEST FLOW (HTTP/REST):
- * 
+ *
  * Client Request
  *   ↓
  * Middleware Chain (CORS → JSON Parser → Rate Limiter → Logger)
@@ -194,7 +219,7 @@ startServer();
 
 /**
  * WEBSOCKET FLOW (Socket.io):
- * 
+ *
  * Client Connects
  *   ↓
  * Socket Middleware (authenticate token)
@@ -210,12 +235,11 @@ startServer();
 
 /**
  * 🔨 TASKS TO IMPLEMENT:
- * 
- * 
+ *
+ *
  * 2. Add More Features (See .github/copilot-instructions.md)
  *    - Typing indicators
  *    - User presence (online/offline)
  *    - Message reactions
  *    - File uploads
  */
-

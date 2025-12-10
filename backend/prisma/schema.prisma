@@ -47,6 +47,8 @@ model User {
 model Server {
   id         String   @id @default(uuid())
   name       String
+  serverCode String   @unique  
+  codeGeneratedAt DateTime       @default(now())  
   iconUrl    String?  @map("icon_url")
   theme      String? @default("nature")
   inviteCode String   @unique @default(uuid()) @map("invite_code") // Unique code for inviting users

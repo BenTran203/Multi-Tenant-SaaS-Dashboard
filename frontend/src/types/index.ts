@@ -46,7 +46,8 @@ export interface Server {
   name: string;
   icon?: string;            // Emoji or URL
   theme?: string;           // Theme color scheme (nature, ocean, sunset)
-  inviteCode: string;       // Unique code for joining
+  serverCode: string;       // 8-character alphanumeric code for joining (replaces inviteCode)
+  codeGeneratedAt?: string; // ISO date string - when the code was last generated
   ownerId: string;          // UUID reference to User
   createdAt: string;
   server?: { name: string }; // Sometimes backend includes this

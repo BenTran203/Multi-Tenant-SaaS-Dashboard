@@ -1,19 +1,3 @@
-/**
- * 💬 CHAT PAGE - Main Application Interface
- *
- * LEARNING: Complex Layout with Multiple Components
- * - Slack-style 3-column layout
- * - Server sidebar (left) → Channel list (middle) → Chat area (right)
- * - Real-time message updates with Socket.io
- * - State management across multiple components
- *
- * LAYOUT STRUCTURE:
- * ┌──────┬─────────┬────────────────┐
- * │Server│Channels │  Chat Messages │
- * │List  │  List   │  + Input       │
- * │      │         │                │
- * └──────┴─────────┴────────────────┘
- */
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -205,9 +189,43 @@ export function Chat() {
         />
       )}
       {/* 3️⃣ RIGHT AREA: Chat Messages + Input */}
-      <div className="flex-1 flex flex-col relative">
+      {/* 
+        ===================================================
+        OOP SCROLL PATTERN - PARENT CONTAINER RESPONSIBILITY
+        ===================================================
+        
+        LEARNING: This div is the "Parent Class" that defines constraints
+        
+        THINK OF IT LIKE OOP INHERITANCE:
+        - Chat.tsx (Parent) = Abstract class defining container rules
+        - ChatArea (Child) = Concrete class implementing scroll behavior
+        - UserListSidebar (Child) = Another concrete class with same pattern
+        
+        PARENT'S RESPONSIBILITY:
+        ✅ Set bounds: h-screen (100vh) - "You can't be taller than viewport"
+        ✅ Lock overflow: overflow-hidden - "I won't let you create page scroll"
+        ✅ Layout children: flex flex-col - "Stack vertically"
+        
+        CHILD'S RESPONSIBILITY:
+        ✅ Respect bounds: Stay within parent's height
+        ✅ Handle own scroll: overflow-y-auto on their content
+        ✅ Share space: Use flex-1 to fill available space
+        
+        WHY h-screen + overflow-hidden HERE?
+        - Creates "scroll boundary" at viewport level
+        - Forces children to work WITHIN 100vh
+        - Prevents cascading overflow to <body>
+        
+        RESULT: Page NEVER scrolls, only components inside do!
+      */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header with theme toggle and logout */}
-        <div className="h-16 border-b border-nature-stone dark:border-dark-border bg-white dark:bg-dark-surface px-6 flex items-center justify-between">
+        {/* 
+          LEARNING: Fixed Height Header
+          - h-16 = Fixed 64px height
+          - flex-shrink-0 = Prevents header from shrinking
+        */}
+        <div className="h-16 flex-shrink-0 border-b border-nature-stone dark:border-dark-border bg-white dark:bg-dark-surface px-6 flex items-center justify-between">
           <div>
             {selectedChannelId && (
               <h2 className="font-pixel text-lg text-grass-600 dark:text-grass-400">

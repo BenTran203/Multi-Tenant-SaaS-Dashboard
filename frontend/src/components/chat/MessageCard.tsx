@@ -1,11 +1,5 @@
 /**
- * 💬 MESSAGE CARD - Individual Message Display
- * 
- * LEARNING: Message Component
- * - Flat card style (Discord-inspired, not bubbles)
- * - Shows username, timestamp, and content
- * - Different styling for own messages
- * - Hover effects for interactivity
+ * Individual Message Display
  */
 
 import { Message } from '../../types';
@@ -13,15 +7,11 @@ import { formatDistanceToNow } from '../../utils/dateUtils';
 
 interface MessageCardProps {
   message: Message;
-  isOwn: boolean;  // Is this message from current user?
+  isOwn: boolean;
 }
 
 /**
  * MESSAGE CARD COMPONENT
- * 
- * LEARNING: Conditional Styling
- * - Different colors for own vs others' messages
- * - Subtle visual distinction without speech bubbles
  */
 export function MessageCard({ message, isOwn }: MessageCardProps) {
   
@@ -70,7 +60,7 @@ export function MessageCard({ message, isOwn }: MessageCardProps) {
 
       {/* LEARNING: Message Content */}
       <div className="pl-10">
-        <p className="text-nature-soil dark:text-nature-cream font-pixel leading-relaxed">
+        <p className="text-nature-soil dark:text-nature-cream font-pixel leading-relaxed break-words overflow-wrap-anywhere max-w-full">
           {message.content}
         </p>
       </div>
@@ -78,15 +68,4 @@ export function MessageCard({ message, isOwn }: MessageCardProps) {
   );
 }
 
-/**
- * KEY FEATURES:
- * 
- * 1. Flat Card Style - No speech bubbles, Discord-like
- * 2. User Avatar - Shows initials in colored circle
- * 3. Username Display - Bold, colored text
- * 4. Relative Timestamps - "5 minutes ago" format
- * 5. Own Message Highlight - Oak color for your messages
- * 6. Border Accent - Left border for visual separation
- * 7. Hover Effect - Subtle elevation on hover (from message-card class)
- */
 

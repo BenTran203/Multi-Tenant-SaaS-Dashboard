@@ -10,14 +10,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Users } from 'lucide-react';
+import { ArrowLeft, Settings, Users, AlertTriangle } from 'lucide-react';
 import { Server } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { ServerGeneralSettings } from '../components/settings/ServerGeneralSettings';
 import { ServerMembersSettings } from '../components/settings/ServerMembersSettings';
+import { ServerDangerZone } from '../components/settings/ServerDangerZone';
 
-type SettingsTab = 'general' | 'members';
+type SettingsTab = 'general' | 'members' | 'danger';
 
 /**
  * SERVER SETTINGS PAGE COMPONENT
@@ -166,6 +167,21 @@ export function ServerSettings() {
                 <Users size={18} />
                 <span>Members</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('danger')}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl font-pixel text-sm
+                  transition-all duration-200
+                  ${activeTab === 'danger'
+                    ? 'bg-red-600 text-white shadow-lg'
+                    : 'bg-nature-100 dark:bg-nature-900/30 text-nature-bark dark:text-nature-cream hover:bg-nature-200 dark:hover:bg-nature-900/50'
+                  }
+                `}
+              >
+                <AlertTriangle size={18} />
+                <span>Danger Zone</span>
+              </button>
             </div>
           </div>
 
@@ -178,7 +194,15 @@ export function ServerSettings() {
               />
             )}
             {activeTab === 'members' && (
-              <ServerMembersSettings serverId={server.id} />
+              <ServerMembersSettings serverId={Number(server.id)} />
+            )}
+            {activeTab === 'danger' && (
+              <ServerDangerZone 
+                server={server}
+                isOwner={server.ownerId === user?.id}
+                currentUserId={user?.id || ''}
+                onNavigateBack={() => navigate('/chat')}
+              />
             )}
           </div>
         </div>

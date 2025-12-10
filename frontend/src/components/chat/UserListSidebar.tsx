@@ -8,6 +8,33 @@
  * - Real-time updates via PresenceContext
  * 
  * DISCORD-STYLE: Right sidebar with user cards
+ * 
+ * ===================================================
+ * OOP-INSPIRED SCROLL ISOLATION PATTERN
+ * ===================================================
+ * 
+ * ENCAPSULATION ANALOGY:
+ * Think of each component like a Java/C# class:
+ * - ChatArea.scrollContainer = private field (only ChatArea can access)
+ * - UserListSidebar.scrollContainer = private field (independent from ChatArea)
+ * - Both use the same "interface" (flex + overflow pattern) but operate independently
+ * 
+ * SCROLL CONTAINMENT PATTERN:
+ * Outer div: h-screen overflow-hidden flex flex-col
+ *   ├─ Header: h-16 flex-shrink-0 (FIXED HEIGHT - 64px)
+ *   └─ Scrollable List: flex-1 overflow-y-auto min-h-0
+ * 
+ * WHY THIS WORKS:
+ * 1. h-screen: Sets total height to 100vh (full viewport)
+ * 2. overflow-hidden: Prevents THIS component from adding page scroll
+ * 3. flex-shrink-0 on header: Header always stays 64px tall
+ * 4. flex-1 on list: List takes remaining space (100vh - 64px)
+ * 5. min-h-0: Allows flex child to shrink below content size
+ * 6. overflow-y-auto: Creates isolated scroll ONLY in this list
+ * 
+ * RESULT:
+ * UserList scrolls members ≠ ChatArea scrolls messages ≠ Page scrolls nothing
+ * Each component has its own "private" scroll behavior!
  */
 
 import { useEffect } from 'react';
@@ -87,21 +114,37 @@ export function UserListSidebar({ serverId, members }: UserListSidebarProps) {
    * 3. Each user card shows: avatar, name, status
    */
   return (
-    <div className="w-64 bg-white dark:bg-dark-surface border-l border-nature-stone dark:border-dark-border flex flex-col">
+    // LEARNING: Full Height Container with Isolated Scroll
+    // - h-screen = Full viewport height
+    // - overflow-hidden = Prevents this component from causing page scroll
+    // - flex flex-col = Stacks header and scrollable list vertically
+    <div className="w-64 h-screen bg-white dark:bg-dark-surface border-l border-nature-stone dark:border-dark-border flex flex-col overflow-hidden">
       
       {/* ========================================
           HEADER SECTION
           ======================================== */}
-      <div className="h-16 border-b border-nature-stone dark:border-dark-border px-4 flex items-center">
+      {/* 
+        LEARNING: Fixed Height Header
+        - h-16 = Fixed height
+        - flex-shrink-0 = Prevents shrinking
+      */}
+      <div className="h-16 flex-shrink-0 border-b border-nature-stone dark:border-dark-border px-4 flex items-center">
         <h2 className="font-pixel text-sm text-nature-bark dark:text-nature-cream">
           Members — {safeMembers.length}
         </h2>
       </div>
 
       {/* ========================================
-          USER LIST SECTION
+          USER LIST SECTION - SCROLLABLE
           ======================================== */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      {/* 
+        LEARNING: Scrollable Members List
+        - flex-1 = Takes remaining height after header
+        - overflow-y-auto = Only THIS div scrolls (isolated scroll)
+        - min-h-0 = Allows flex item to shrink below content size
+        - Scroll only affects user list, not page or chat
+      */}
+      <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2">
         
         {/**
          * ARRAY.MAP: Render Each Member
