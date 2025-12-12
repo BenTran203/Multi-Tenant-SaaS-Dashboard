@@ -2,47 +2,41 @@
  * ============================================================================
  * SERVER CONTROLLER
  * ============================================================================
- * 
+ *
  */
 import { prisma } from "../config/database.js";
-
+import { generateUniqueServerCode } from "../utils/serverCodeGenerator.js";
 
 // Create Server
 export const createServer = async (req, res) => {
   try {
-    const { name, icon } = req.body;
+    const { name, icon, theme } = req.body;
     const userId = req.user.id;
 
-    const server = await prisma.$transaction(async (tx) => {
-      // 1. Create Server
-      const newServer = await tx.server.create({
-        data: {
-          name,
-          iconUrl: icon,
-          ownerId: userId,
-        },
-      });
+    const serverCode = await generateUniqueServerCode();
 
-      // 2. Add Owner as Admin
-      await tx.serverMember.create({
-        data: {
-          userId: userId,
-          serverId: newServer.id,
-          role: "ADMIN",
+    const server = await prisma.server.create({
+      data: {
+        name,
+        iconUrl: icon,
+        ownerId: userId,
+        theme: theme || "nature",
+        serverCode,
+        codeGeneratedAt: new Date(),
+        members: {
+          create: {
+            userId,
+            role: "ADMIN",
+          },
         },
-      });
-
-      // 3. Create Default Channel
-      await tx.channel.create({
-        data: {
-          name: "general",
-          type: "TEXT",
-          serverId: newServer.id,
-          position: 0,
+        channels: {
+          create: {
+            name: "general",
+            type: "TEXT",
+            position: 0,
+          },
         },
-      });
-
-      return newServer;
+      },
     });
 
     res.status(201).json({
@@ -146,21 +140,27 @@ export const getServerById = async (req, res) => {
   }
 };
 
-// Join server function
- 
-export const joinServer = async (req, res) => {
+// Join server by code (NEW: uses serverCode instead of inviteCode)
+export const joinServer = async (req, res, next) => {
   try {
-    const { inviteCode } = req.body;
+    const { serverCode } = req.body;
     const userId = req.user.id;
 
-    // 1. Find Server
+    // Validate server code format
+    if (!serverCode || serverCode.trim().length !== 8) {
+      return res.status(400).json({
+        message: "Server code must be exactly 8 characters",
+      });
+    }
+
+    // 1. Find Server by code
     const server = await prisma.server.findUnique({
-      where: { inviteCode },
+      where: { serverCode: serverCode.toUpperCase() },
     });
 
     if (!server) {
       return res.status(404).json({
-        error: "Invalid invite code",
+        message: "Server not found with this code",
       });
     }
 
@@ -176,29 +176,26 @@ export const joinServer = async (req, res) => {
 
     if (existingMember) {
       return res.status(409).json({
-        error: "You are already a member of this server",
+        message: "You are already a member of this server",
       });
     }
 
     // 3. Add Member
-    await prisma.serverMember.create({
+    const membership = await prisma.serverMember.create({
       data: {
         userId: userId,
         serverId: server.id,
-        role: "MEMBER", // Default role
+        role: "MEMBER",
       },
     });
 
     res.json({
       message: "Successfully joined server",
       server,
+      membership,
     });
   } catch (error) {
-    console.error("Join server error:", error);
-    res.status(500).json({
-      error: "Failed to join server",
-      details: error.message,
-    });
+    next(error);
   }
 };
 
@@ -310,9 +307,9 @@ export const getServerMember = async (req, res, next) => {
       },
     });
 
-    res.json({ 
+    res.json({
       members,
-      count: members.length
+      count: members.length,
     });
   } catch (error) {
     next(error);
@@ -326,39 +323,39 @@ export const kickMember = async (req, res, next) => {
     const userId = req.user.id;
 
     const server = await prisma.server.findUnique({
-      where: { id: serverId }
+      where: { id: serverId },
     });
 
     if (!server) {
-      return res.status(404).json({ message: 'Server not found' });
+      return res.status(404).json({ message: "Server not found" });
     }
 
     if (server.ownerId !== userId) {
-      return res.status(403).json({ 
-        message: 'Only the server owner can kick members' 
+      return res.status(403).json({
+        message: "Only the server owner can kick members",
       });
     }
 
     const member = await prisma.serverMember.findUnique({
-      where: { id: memberId }
+      where: { id: memberId },
     });
 
     if (!member) {
-      return res.status(404).json({ message: 'Member not found' });
+      return res.status(404).json({ message: "Member not found" });
     }
 
     if (member.userId === server.ownerId) {
-      return res.status(400).json({ 
-        message: 'Cannot kick the server owner' 
+      return res.status(400).json({
+        message: "Cannot kick the server owner",
       });
     }
 
     await prisma.serverMember.delete({
-      where: { id: memberId }
+      where: { id: memberId },
     });
 
-    res.json({ 
-      message: 'Member kicked successfully' 
+    res.json({
+      message: "Member kicked successfully",
     });
   } catch (error) {
     next(error);
@@ -373,23 +370,23 @@ export const updateMemberNickname = async (req, res, next) => {
     const userId = req.user.id;
 
     const server = await prisma.server.findUnique({
-      where: { id: serverId }
+      where: { id: serverId },
     });
 
     if (!server) {
-      return res.status(404).json({ message: 'Server not found' });
+      return res.status(404).json({ message: "Server not found" });
     }
 
     if (server.ownerId !== userId) {
-      return res.status(403).json({ 
-        message: 'Only the server owner can change nicknames' 
+      return res.status(403).json({
+        message: "Only the server owner can change nicknames",
       });
     }
 
     const updatedMember = await prisma.serverMember.update({
       where: { id: memberId },
-      data: { 
-        nickname: nickname?.trim() || null 
+      data: {
+        nickname: nickname?.trim() || null,
       },
       include: {
         user: {
@@ -398,15 +395,132 @@ export const updateMemberNickname = async (req, res, next) => {
             username: true,
             email: true,
             avatarUrl: true,
-            password: false
-          }
-        }
+            password: false,
+          },
+        },
+      },
+    });
+
+    res.json({
+      member: updatedMember,
+      message: "Nickname updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Leave server
+export const leaveServer = async (req, res, next) => {
+  try {
+    const { id: serverId } = req.params;
+    const userId = req.user.id;
+
+    const server = await prisma.server.findUnique({
+      where: { id: serverId },
+      include: { members: true },
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: "Server not found" });
+    }
+
+    if (server.ownerId === userId) {
+      return res.status(400).json({
+        message: "Cannot leave server: you are the owner",
+        isOwner: true,
+        hasOtherMembers: server.members.length > 1,
+      });
+    }
+
+    await prisma.serverMember.delete({
+      where: {
+        userId_serverId: { userId, serverId },
+      },
+    });
+
+    res.json({ message: "Successfully left the server" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Transfer ownership
+export const transferOwnership = async (req, res, next) => {
+  try {
+    const { id: serverId } = req.params;
+    const { newOwnerId } = req.body;
+    const userId = req.user.id;
+    const server = await prisma.server.findUnique({
+      where: { id: serverId },
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: "Server not found" });
+    }
+
+    if (server.ownerId !== userId) {
+      return res.status(403).json({
+        message: "Only the server owner is allowed to transfer ownership",
+      });
+    }
+
+    const newOwnerMemberShip = await prisma.serverMember.findUnique({
+      where: {
+        userId_serverId: { userId: newOwnerId, serverId },
+      },
+    });
+
+    if (!newOwnerMemberShip) {
+      return res
+        .status(400)
+        .json({ message: "New owner must be a member of this server" });
+    }
+
+    const updatedServer = await prisma.server.update({
+      where: { id: serverId },
+      data: { ownerId: newOwnerId },
+    });
+    res.json({
+      server: updatedServer,
+      message: "Ownership transferred successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Regenerate server code
+export const regenerateServerCode = async (req, res, next) => {
+  try {
+    const { id: serverId } = req.params;
+    const userId = req.user.id;
+
+    const server = await prisma.server.findUnique({
+      where: { id: serverId }
+    });
+
+    if (!server) {
+      return res.status(404).json({ message: 'Server not found' });
+    }
+
+    if (server.ownerId !== userId) {
+      return res.status(403).json({ message: 'Only the server owner can regenerate the code' });
+    }
+
+    const newCode = await generateUniqueServerCode();
+
+    const updatedServer = await prisma.server.update({
+      where: { id: serverId },
+      data: {
+        serverCode: newCode,
+        codeGeneratedAt: new Date()
       }
     });
 
     res.json({ 
-      member: updatedMember,
-      message: 'Nickname updated successfully'
+      server: updatedServer,
+      serverCode: newCode
     });
   } catch (error) {
     next(error);

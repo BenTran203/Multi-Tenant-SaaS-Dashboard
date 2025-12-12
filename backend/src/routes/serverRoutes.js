@@ -14,7 +14,10 @@ import {
   deleteServer,
   getServerMember,
   kickMember,
-  updateMemberNickname
+  updateMemberNickname,
+  leaveServer,
+  transferOwnership,
+  regenerateServerCode
 } from '../controllers/serverController.js';
 import { authenticate } from '../middleware/auth.js';
 import {
@@ -65,8 +68,11 @@ router.post(
   joinServer
 );
 
-//Delete server
-router.delete('/:id', authenticate, deleteServer)
+//Delete server - Leave server
+router.delete('/:id', authenticate, deleteServer);
+router.delete('/:id/leave', authenticate, leaveServer);
+router.post('/:id/transfer-ownership', authenticate, transferOwnership);
+router.post('/:id/regenerate-code', authenticate, regenerateServerCode);
 
 //Server setting routes
 router.put('/:id', authenticate, updateServer);
