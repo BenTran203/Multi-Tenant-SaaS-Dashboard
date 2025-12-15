@@ -14,13 +14,13 @@ import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 
 interface ServerMember {
-  id: number;
-  userId: number;
-  serverId: number;
+  id: string;
+  userId: string;
+  serverId: string;
   nickname: string | null;
   joinedAt: string;
   user: {
-    id: number;
+    id: string;
     username: string;
     email: string;
     avatarUrl?: string;
@@ -28,7 +28,7 @@ interface ServerMember {
 }
 
 interface ServerMembersSettingsProps {
-  serverId: number;
+  serverId: string;
 }
 
 /**
@@ -36,12 +36,12 @@ interface ServerMembersSettingsProps {
  */
 export function ServerMembersSettings({ serverId }: ServerMembersSettingsProps) {
   const [members, setMembers] = useState<ServerMember[]>([]);
-  const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   // Track which member is being edited
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState('');
 
   /**
@@ -87,7 +87,7 @@ export function ServerMembersSettings({ serverId }: ServerMembersSettingsProps) 
    * KICK MEMBER
    * Backend endpoint: DELETE /api/servers/:serverId/members/:memberId
    */
-  const handleKickMember = async (memberId: number, username: string) => {
+  const handleKickMember = async (memberId: string, username: string) => {
     if (!confirm(`Are you sure you want to kick ${username} from the server?`)) {
       return;
     }
@@ -115,7 +115,7 @@ export function ServerMembersSettings({ serverId }: ServerMembersSettingsProps) 
    * SAVE NICKNAME
    * Backend endpoint: PATCH /api/servers/:serverId/members/:memberId/nickname
    */
-  const handleSaveNickname = async (memberId: number) => {
+  const handleSaveNickname = async (memberId: string) => {
     try {
       const response = await api.patch(
         `/api/servers/${serverId}/members/${memberId}/nickname`,

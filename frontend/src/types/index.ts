@@ -29,6 +29,7 @@ export interface User {
   avatarUrl?: string;       // Optional avatar URL
   bio?: string;             // Optional user bio
   createdAt: string;        // ISO date string
+  joinedAt?: string;        // Optional - when user joined a server (ServerMember.joinedAt)
 }
 
 export interface AuthResponse {

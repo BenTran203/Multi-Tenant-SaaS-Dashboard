@@ -334,7 +334,7 @@ export function ChatArea({ channelId }: ChatAreaProps) {
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-6 space-y-3"
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-6 space-y-3 bg-theme-bg dark:bg-theme-dark-bg"
       >
         
         {/* LEARNING: Loading More Indicator at Top */}
@@ -392,9 +392,9 @@ export function ChatArea({ channelId }: ChatAreaProps) {
           <div className="flex items-center gap-2">
             {/* Animated bouncing dots */}
             <div className="flex gap-1">
-              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-              <span className="w-2 h-2 bg-grass-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              <span className="w-2 h-2 bg-theme-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-theme-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-theme-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
             </div>
             {/* Typing text */}
             <span className="text-sm font-sans text-nature-700 dark:text-nature-300">
@@ -469,8 +469,8 @@ export function ChatArea({ channelId }: ChatAreaProps) {
               type="submit"
               disabled={sending || !newMessage.trim()}
               className="
-                px-6 py-3 bg-grass-500 text-white rounded-2xl
-                hover:bg-grass-600 active:scale-95
+                px-6 py-3 bg-theme-primary text-white rounded-2xl
+                hover:bg-theme-secondary active:scale-95
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition-all duration-200 shadow-lg hover:shadow-xl
                 flex items-center gap-2 font-pixel text-sm

@@ -98,13 +98,12 @@
  * REUSABLE COMPONENT STYLES
  */
 @layer components {
-  /* Primary button - grass green, bouncy animation */
+  /* Primary button - uses dynamic theme colors */
   .btn-primary {
-    @apply px-6 py-3 bg-grass-500 text-white font-pixel text-sm rounded-2xl;
-    @apply hover:bg-grass-600 active:scale-95;
+    @apply px-6 py-3 bg-theme-primary text-white font-pixel text-sm rounded-2xl;
+    @apply hover:bg-theme-secondary active:scale-95;
     @apply transition-all duration-200;
     @apply shadow-lg hover:shadow-xl;
-    @apply dark:shadow-grass-500/20;
   }
   
   /* Secondary button - oak brown */
@@ -115,11 +114,11 @@
     @apply shadow-lg hover:shadow-xl;
   }
   
-  /* Outline button - for less important actions */
+  /* Outline button - uses dynamic theme colors */
   .btn-outline {
-    @apply px-6 py-3 bg-transparent border-2 border-grass-500 text-grass-600 font-pixel text-sm rounded-2xl;
-    @apply hover:bg-grass-50 active:scale-95;
-    @apply dark:text-grass-400 dark:hover:bg-grass-500/10;
+    @apply px-6 py-3 bg-transparent border-2 border-theme-primary text-theme-primary font-pixel text-sm rounded-2xl;
+    @apply hover:bg-theme-light active:scale-95;
+    @apply dark:text-theme-accent dark:hover:bg-theme-primary/10;
     @apply transition-all duration-200;
   }
   
@@ -127,9 +126,9 @@
   .input-field {
     @apply w-full px-4 py-3 rounded-2xl font-pixel;
     @apply bg-white border-2 border-nature-stone text-nature-soil;
-    @apply focus:outline-none focus:border-grass-500 focus:ring-2 focus:ring-grass-200;
+    @apply focus:outline-none focus:border-theme-primary focus:ring-2 focus:ring-theme-light;
     @apply dark:bg-dark-surface dark:border-dark-border dark:text-nature-cream;
-    @apply dark:focus:border-grass-500 dark:focus:ring-grass-500/20;
+    @apply dark:focus:border-theme-primary dark:focus:ring-theme-accent;
     @apply transition-all duration-200;
     @apply placeholder:text-nature-bark/40 dark:placeholder:text-nature-stone;
   }

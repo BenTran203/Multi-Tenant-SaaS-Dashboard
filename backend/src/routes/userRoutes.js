@@ -12,10 +12,22 @@ import {
 
 const router = express.Router();
 
-// GET /api/users/profile - Get current user's profile
+//  Get current user's profile (alias)
+router.get('/me', authenticate, getProfile);
+
+//  Update current user's profile (alias)
+router.put(
+  '/me',
+  authenticate,
+  profileUpdateValidation,
+  handleValidationErrors,
+  updateProfile
+);
+
+// Get current user's profile
 router.get('/profile', authenticate, getProfile);
 
-// PUT /api/users/profile - Update current user's profile
+// Update current user's profile
 router.put(
   '/profile',
   authenticate,
@@ -24,7 +36,7 @@ router.put(
   updateProfile
 );
 
-// DELETE /api/users/profile - Delete current user's account
+//  Delete current user's account
 router.delete('/profile', authenticate, deleteAccount);
 
 export default router;

@@ -88,9 +88,9 @@ export function ChannelSidebar({
   return (
     <>
       {/* LEARNING: Medium-Width Sidebar */}
-      <div className="w-64 bg-nature-sand dark:bg-dark-elevated border-r border-nature-stone dark:border-dark-border flex flex-col">
+      <div className="w-64 bg-theme-surface dark:bg-theme-dark-surface border-r border-theme-primary/20 dark:border-theme-primary/30 flex flex-col">
         {/* Header with server name */}
-        <div className="h-16 border-b border-nature-stone dark:border-dark-border px-4 flex items-center justify-between">
+        <div className="h-16 border-b border-theme-primary/20 dark:border-theme-primary/30 px-4 flex items-center justify-between">
           <h2 className="font-pixel text-sm text-nature-bark dark:text-nature-cream truncate">
             {channels[0]?.server?.name || "Server"}
           </h2>
@@ -137,7 +137,7 @@ export function ChannelSidebar({
                   flex items-center gap-2 transition-all duration-200
                   ${
                     selectedChannelId === channel.id
-                      ? "bg-grass-500 text-white shadow-md"
+                      ? "bg-theme-primary text-white shadow-md hover:bg-theme-secondary"
                       : "text-nature-bark dark:text-nature-cream hover:bg-nature-stone dark:hover:bg-dark-hover"
                   }
                 `}
@@ -147,7 +147,7 @@ export function ChannelSidebar({
                   className={
                     selectedChannelId === channel.id
                       ? "text-white"
-                      : "text-grass-600 dark:text-grass-400"
+                      : "text-theme-primary dark:text-theme-accent"
                   }
                 />
                 <span className="truncate">{channel.name}</span>

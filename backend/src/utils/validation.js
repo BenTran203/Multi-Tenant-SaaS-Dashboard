@@ -135,15 +135,17 @@ export const createMessageValidation = [
 ];
 
 /**
- * Server join validation (invite code)
+ * Server join validation (server code)
  */
 export const joinServerValidation = [
-  body("inviteCode")
+  body("serverCode")
     .trim()
     .notEmpty()
-    .withMessage("Invite code is required")
-    .isUUID()
-    .withMessage("Invalid invite code format"),
+    .withMessage("Server code is required")
+    .isLength({ min: 8, max: 8 })
+    .withMessage("Server code must be exactly 8 characters")
+    .matches(/^[A-Z0-9]{8}$/i)
+    .withMessage("Server code must contain only letters and numbers"),
 ];
 
 /**

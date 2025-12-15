@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { Save, Copy, Check, RefreshCw } from 'lucide-react';
 import { Server } from '../../types';
 import { api } from '../../services/api';
+import { useServerTheme } from '../../contexts/ServerThemeContext';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
@@ -60,6 +61,7 @@ const THEME_OPTIONS = [
  * SERVER GENERAL SETTINGS COMPONENT
  */
 export function ServerGeneralSettings({ server, onUpdate }: ServerGeneralSettingsProps) {
+  const { setServerTheme } = useServerTheme();
   const [name, setName] = useState(server.name);
   const [icon, setIcon] = useState(server.icon || '\ud83c\udf3f');
   const [theme, setTheme] = useState(server.theme || 'nature'); // Get theme from server
@@ -95,6 +97,10 @@ export function ServerGeneralSettings({ server, onUpdate }: ServerGeneralSetting
 
       const updatedServer = response.data.server || response.data;
       onUpdate(updatedServer);
+      
+      // Apply theme immediately
+      setServerTheme(updatedServer.theme || 'nature');
+      
       setSuccess('Settings saved successfully! 🎉');
       
       // Clear success message after 3 seconds

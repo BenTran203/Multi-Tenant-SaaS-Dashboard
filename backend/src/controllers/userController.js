@@ -1,15 +1,7 @@
-import bcrypt from "bcrypt";
 import { prisma } from "../config/database.js";
 
 /**
  * Get Current User Profile
- *
- * LOGIC:
- * - req.user is populated by authenticate middleware
- * - Fetch full user data from database
- * - Exclude password from response
- *
- * GET /api/users/profile
  */
 export const getProfile = async (req, res) => {
   try {
@@ -42,23 +34,13 @@ export const getProfile = async (req, res) => {
 
 /**
  * Update User Profile
- *
- * LOGIC:
- * - Validate input (username, email, bio, avatarUrl)
- * - Check if new username/email is already taken
- * - Update database
- * - Return updated user (without password)
- *
- * PUT /api/users/profile
- * Body: { username?, email?, bio?, avatarUrl? }
  */
 export const updateProfile = async (req, res) => {
   try {
     const { username, email, bio, avatarUrl } = req.body;
     const userId = req.user.id;
 
-    // CONCEPT: Partial Updates
-    // Build an object with only the fields that were provided
+   
     const updateData = {};
     if (username !== undefined) updateData.username = username;
     if (email !== undefined) updateData.email = email;
@@ -70,7 +52,7 @@ export const updateProfile = async (req, res) => {
       const existingUser = await prisma.user.findFirst({
         where: {
           username,
-          NOT: { id: userId }, // Exclude current user
+          NOT: { id: userId }, 
         },
       });
 

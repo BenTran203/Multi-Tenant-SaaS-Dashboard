@@ -23,7 +23,7 @@ import userRoutes from "./routes/userRoutes.js";
 import serverRoutes from "./routes/serverRoutes.js";
 import channelRoutes from "./routes/channelRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
-import startServerCodeCron from "./jobs/serverCodeCron.js";
+import { startServerCodeCron } from "./jobs/serverCodeCron.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import {
   setupSocketHandlers,
@@ -37,18 +37,26 @@ const httpServer = createWebServer(app);
 // Socket .io
 // ============================================
 
+let io;
+
 try {
   console.log("Creating Socket.io server...");
-  const io = new Server(httpServer, {
+  io = new Server(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URL || "http://localhost:5173",
       methods: ["GET", "POST"],
       credentials: true,
     },
   });
-  console.log("Socket.io server created!");
+  console.log("✅ Socket.io server created!");
+
+  // Setup Socket.io handlers immediately after creation
+  setupSocketHandlers(io);
+  setupPresenceHandlers(io);
+  console.log("✅ Socket.io handlers ready!");
 } catch (error) {
-  console.log("Error creating socket server");
+  console.error("❌ Failed to setup Socket.io:", error);
+  console.warn("⚠️  Real-time messaging will NOT work");
 }
 
 try {
@@ -120,18 +128,6 @@ app.use(notFoundHandler);
 
 // Error handler (must be LAST)
 app.use(errorHandler);
-
-// ============================================
-// SOCKET.IO SETUP
-// ============================================
-
-try {
-  setupSocketHandlers(io);
-  setupPresenceHandlers(io);
-  console.log("Socket.io handlers ready!");
-} catch (error) {
-  console.error(" Failed to setup Socket.io handlers:", error);
-}
 
 // ============================================
 // DATABASE CONNECTION

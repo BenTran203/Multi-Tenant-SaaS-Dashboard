@@ -18,7 +18,7 @@ export async function generateUniqueServerCode() {
     
     try {
      while(attempts < maxAttempts) {
-        const code = generalServerCode();
+        const code = generateServerCode();
         const existing = await prisma.server.findUnique({
             where: {serverCode: code}
         })
@@ -27,10 +27,8 @@ export async function generateUniqueServerCode() {
      }
     return generateServerCode() + Date.now().toString().slice(-4);
     } catch (error) {
-        console.log("Error with generating code:", error)
-        res.status(500).json({
-        error: "Failed to generate code",
-    });
+        console.error("Error with generating code:", error);
+        throw new Error("Failed to generate unique server code");
     }
 }
 

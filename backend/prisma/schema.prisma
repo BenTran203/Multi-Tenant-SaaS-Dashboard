@@ -45,20 +45,19 @@ model User {
 
 
 model Server {
-  id         String   @id @default(uuid())
-  name       String
-  serverCode String   @unique  
-  codeGeneratedAt DateTime       @default(now())  
-  iconUrl    String?  @map("icon_url")
-  theme      String? @default("nature")
-  inviteCode String   @unique @default(uuid()) @map("invite_code") // Unique code for inviting users
-  ownerId    String   @map("owner_id")                              // Foreign Key to User
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  name            String
+  serverCode      String   @unique @map("server_code")
+  codeGeneratedAt DateTime @default(now()) @map("code_generated_at")
+  iconUrl         String?  @map("icon_url")
+  theme           String?  @default("nature")
+  ownerId         String   @map("owner_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   //A server belongs to one owner, has many members and channels
-  owner   User           @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members ServerMember[]
+  owner    User           @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  ServerMember[]
   channels Channel[]
 
   @@map("servers")

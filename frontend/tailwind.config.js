@@ -12,6 +12,19 @@ export default {
     extend: {
       // 🌿 NATURE-INSPIRED COLOR PALETTE
       colors: {
+        // Theme Dynamic Colors (CSS variables)
+        theme: {
+          primary: 'var(--color-theme-primary, #22c55e)',
+          secondary: 'var(--color-theme-secondary, #16a34a)',
+          accent: 'var(--color-theme-accent, #15803d)',
+          light: 'var(--color-theme-light, #dcfce7)',
+          dark: 'var(--color-theme-dark, #14532d)',
+          bg: 'var(--color-theme-bg, #f0fdf4)',
+          surface: 'var(--color-theme-surface, #dcfce7)',
+          'dark-bg': 'var(--color-theme-dark-bg, #1a1614)',
+          'dark-surface': 'var(--color-theme-dark-surface, #252220)',
+        },
+        
         // Grass Green - Primary accent color
         grass: {
           50: '#f0fdf4',   // Very light green

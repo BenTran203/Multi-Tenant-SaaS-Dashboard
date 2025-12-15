@@ -10,14 +10,13 @@ import { api } from '../services/api';
 
 export function Profile() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -28,7 +27,7 @@ export function Profile() {
       setUsername(user.username);
       setEmail(user.email);
       setAvatarUrl(user.avatarUrl || '');
-      // setBio will be loaded from API once backend is ready
+      setBio(user.bio || '');
     }
   }, [user]);
 
@@ -39,15 +38,38 @@ export function Profile() {
     setSaving(true);
 
     try {
-      // TODO: Implement API call when backend is ready
-      // await api.put('/api/users/profile', { username, email, bio, avatarUrl });
+      // LEARNING: Call the backend profile update endpoint
+      // Only send fields that have values (partial update)
+      const updateData: any = {};
+      if (username && username !== user?.username) updateData.username = username;
+      if (email && email !== user?.email) updateData.email = email;
+      if (bio !== (user?.bio || '')) updateData.bio = bio;
+      if (avatarUrl !== (user?.avatarUrl || '')) updateData.avatarUrl = avatarUrl;
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        setSuccess('No changes to save');
+        setSaving(false);
+        return;
+      }
+
+      const response = await api.put('/api/users/me', updateData);
       
-      // Temporary success message
-      setSuccess('Profile updated successfully! (Backend not connected yet)');
+      // LEARNING: Update the user in AuthContext state + localStorage
+      updateUser(response.data.user);
       
-      // In real implementation, you'd update the auth context here
+      setSuccess('Profile updated successfully!');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+      // LEARNING: Handle validation errors from backend
+      if (err.response?.data?.errors) {
+        // express-validator errors
+        const errorMessages = err.response.data.errors.map((e: any) => e.msg).join(', ');
+        setError(errorMessages);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Failed to update profile. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
@@ -106,12 +128,12 @@ export function Profile() {
                     user?.username.slice(0, 2).toUpperCase()
                   )}
                 </div>
-                <button
+                {/* <button
                   className="absolute bottom-2 right-2 w-8 h-8 bg-grass-500 hover:bg-grass-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
                   title="Change Avatar"
                 >
                   <Camera size={16} />
-                </button>
+                </button> */}
               </div>
 
               {/* User Info */}
@@ -186,9 +208,6 @@ export function Profile() {
                 rows={4}
                 className="w-full px-4 py-3 bg-nature-cream dark:bg-dark-bg border-2 border-nature-stone dark:border-dark-border rounded-xl text-nature-bark dark:text-nature-cream placeholder:text-nature-stone dark:placeholder:text-nature-stone focus:border-grass-500 dark:focus:border-grass-400 focus:ring-4 focus:ring-grass-100 dark:focus:ring-grass-900/30 transition-all outline-none disabled:opacity-50"
               />
-              <p className="text-xs text-nature-500 dark:text-nature-400">
-                Note: Bio field will be available once backend is implemented
-              </p>
             </div>
 
             <Input

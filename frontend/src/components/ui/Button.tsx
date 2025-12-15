@@ -53,12 +53,12 @@ export function Button({
    */
   const baseClasses = 'font-pixel text-sm px-6 py-3 rounded-2xl transition-all duration-200 active:scale-95';
   
-  // Different styles for each variant
+  // Different styles for each variant (NOW THEME-AWARE! 🎨)
   const variantClasses = {
-    primary: 'bg-grass-500 text-white hover:bg-grass-600 shadow-lg hover:shadow-xl dark:shadow-grass-500/20',
+    primary: 'bg-theme-primary text-white hover:bg-theme-secondary shadow-lg hover:shadow-xl',
     secondary: 'bg-oak-600 text-white hover:bg-oak-700 shadow-lg hover:shadow-xl',
-    outline: 'bg-transparent border-2 border-grass-500 text-grass-600 hover:bg-grass-50 dark:text-grass-400 dark:hover:bg-grass-500/10',
-    ghost: 'bg-transparent text-grass-600 hover:bg-grass-50 dark:text-grass-400 dark:hover:bg-grass-500/10'
+    outline: 'bg-transparent border-2 border-theme-primary hover:bg-theme-light transition-colors',
+    ghost: 'bg-transparent hover:bg-theme-light transition-colors'
   };
 
   return (

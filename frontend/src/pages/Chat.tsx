@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useServerTheme } from "../contexts/ServerThemeContext";
 import { ServerSidebar } from "../components/chat/ServerSidebar";
 import { ChannelSidebar } from "../components/chat/ChannelSidebar";
 import { UserListSidebar } from "../components/chat/UserListSidebar";
@@ -16,6 +17,7 @@ import { Server, Channel, User } from "../types";
  */
 export function Chat() {
   const { user, logout } = useAuth();
+  const { applyTheme } = useServerTheme();
 
   // LEARNING: State Management for Chat
   // - servers: List of servers user belongs to
@@ -49,12 +51,17 @@ export function Chat() {
    * When selectedServerId changes, fetch channels for that server
    * - useEffect with [selectedServerId] dependency
    * - Runs whenever selectedServerId updates
+   * - Apply server theme when server changes
    */
   useEffect(() => {
     if (selectedServerId) {
       fetchChannels(selectedServerId);
+      
+      // Apply theme for selected server
+      const currentServer = servers.find(s => s.id === selectedServerId);
+      applyTheme(currentServer || null);
     }
-  }, [selectedServerId]);
+  }, [selectedServerId, servers, applyTheme]);
 
   // Fetch server members for presence sidebar
   useEffect(() => {
@@ -62,8 +69,11 @@ export function Chat() {
       api
         .get(`/api/servers/${selectedServerId}/members`)
         .then((res) => {
-          // Extract user objects from ServerMember structure
-          const users = res.data.members.map((member: any) => member.user);
+          // Extract user objects from ServerMember structure AND preserve joinedAt
+          const users = res.data.members.map((member: any) => ({
+            ...member.user,
+            joinedAt: member.joinedAt, // Add joinedAt from ServerMember to User object
+          }));
           setServerMembers(users);
         })
         .catch((err) => console.error("Failed to fetch members:", err));
@@ -152,7 +162,7 @@ export function Chat() {
    */
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nature-cream dark:bg-dark-bg">
+      <div className="h-screen flex items-center justify-center bg-theme-bg dark:bg-theme-dark-bg">
         <div className="text-center">
           <div className="animate-bounce-gentle text-4xl mb-4">🌿</div>
           <p className="font-pixel text-grass-600 dark:text-grass-400">
@@ -164,7 +174,7 @@ export function Chat() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-nature-cream dark:bg-dark-bg">
+    <div className="h-screen flex overflow-hidden bg-theme-bg dark:bg-theme-dark-bg">
       {/* 1️⃣ LEFT SIDEBAR: Server List (narrow) */}
       <ServerSidebar
         servers={servers}
@@ -225,7 +235,7 @@ export function Chat() {
           - h-16 = Fixed 64px height
           - flex-shrink-0 = Prevents header from shrinking
         */}
-        <div className="h-16 flex-shrink-0 border-b border-nature-stone dark:border-dark-border bg-white dark:bg-dark-surface px-6 flex items-center justify-between">
+        <div className="h-16 flex-shrink-0 border-b border-theme-primary/20 dark:border-theme-primary/30 bg-theme-surface dark:bg-theme-dark-surface px-6 flex items-center justify-between">
           <div>
             {selectedChannelId && (
               <h2 className="font-pixel text-lg text-grass-600 dark:text-grass-400">

@@ -24,6 +24,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ServerThemeProvider } from './contexts/ServerThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -191,15 +192,17 @@ function AppRoutes() {
  * LEARNING: Provider Nesting
  * - Each provider wraps its children
  * - Inner components can access all outer contexts
- * - Order matters! (BrowserRouter → Theme → Auth → Routes)
+ * - Order matters! (BrowserRouter → Theme → ServerTheme → Auth → Routes)
  */
 function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
+        <ServerThemeProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ServerThemeProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

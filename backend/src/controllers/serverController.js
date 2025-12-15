@@ -298,6 +298,7 @@ export const getServerMember = async (req, res, next) => {
             username: true,
             email: true,
             avatarUrl: true,
+            bio: true,
             password: false,
           },
         },

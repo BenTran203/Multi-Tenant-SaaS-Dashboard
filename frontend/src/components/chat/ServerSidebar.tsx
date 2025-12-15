@@ -128,7 +128,7 @@ export function ServerSidebar({
   return (
     <>
       {/* LEARNING: Fixed Width Sidebar */}
-      <div className="w-20 bg-white dark:bg-dark-surface border-r border-nature-stone dark:border-dark-border flex flex-col items-center py-4 gap-3">
+      <div className="w-20 bg-theme-surface dark:bg-theme-dark-surface border-r border-theme-primary/20 dark:border-theme-primary/30 flex flex-col items-center py-4 gap-3">
         
         {/* User avatar at top - Click to go to profile */}
         <button

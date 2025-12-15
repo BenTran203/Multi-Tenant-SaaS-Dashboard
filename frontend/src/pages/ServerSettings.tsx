@@ -144,7 +144,7 @@ export function ServerSettings() {
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl font-pixel text-sm
                   transition-all duration-200
                   ${activeTab === 'general'
-                    ? 'bg-grass-500 text-white shadow-lg'
+                    ? 'bg-theme-primary text-white shadow-lg'
                     : 'bg-nature-100 dark:bg-nature-900/30 text-nature-bark dark:text-nature-cream hover:bg-nature-200 dark:hover:bg-nature-900/50'
                   }
                 `}
@@ -159,7 +159,7 @@ export function ServerSettings() {
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl font-pixel text-sm
                   transition-all duration-200
                   ${activeTab === 'members'
-                    ? 'bg-grass-500 text-white shadow-lg'
+                    ? 'bg-theme-primary text-white shadow-lg'
                     : 'bg-nature-100 dark:bg-nature-900/30 text-nature-bark dark:text-nature-cream hover:bg-nature-200 dark:hover:bg-nature-900/50'
                   }
                 `}
@@ -194,7 +194,7 @@ export function ServerSettings() {
               />
             )}
             {activeTab === 'members' && (
-              <ServerMembersSettings serverId={Number(server.id)} />
+              <ServerMembersSettings serverId={server.id} />
             )}
             {activeTab === 'danger' && (
               <ServerDangerZone 

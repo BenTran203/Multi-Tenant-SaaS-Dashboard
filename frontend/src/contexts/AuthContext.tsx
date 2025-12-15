@@ -31,6 +31,7 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<void>;
   forgotPass: (email: string, newpassword: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updatedUser: User) => void;  // NEW: Update user in context
 }
 
 /**
@@ -212,8 +213,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/login';
   };
 
+  /**
+   * UPDATE USER FUNCTION
+   * 
+   * Updates user data in context and localStorage
+   * Used when profile is updated
+   * 
+   * @param updatedUser - Updated user object
+   */
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('chatwave-user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, forgotPass, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, forgotPass, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
