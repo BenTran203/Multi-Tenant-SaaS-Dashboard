@@ -296,13 +296,3 @@ export function ServerMembersSettings({ serverId }: ServerMembersSettingsProps) 
   );
 }
 
-/**
- * KEY FEATURES:
- * 
- * 1. Member List Display - Shows all server members
- * 2. Owner Indicator - Crown icon for server owner
- * 3. Kick Member - Remove users from server (confirm dialog)
- * 4. Edit Nickname - Change display name for members
- * 5. Inline Editing - Edit nicknames directly in the list
- * 6. Real-time Updates - Local state updates after actions
- */

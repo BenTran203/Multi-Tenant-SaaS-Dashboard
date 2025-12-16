@@ -1,10 +1,5 @@
 /**
  * LOGIN COMPONENT
- * 
- * LEARNING: This is a React component using hooks
- * - useState: Manages local state (form inputs, errors)
- * - useNavigate: Navigate to different routes
- * - useAuth: Custom hook for authentication
  */
 
 import React, { useState } from 'react';
@@ -12,7 +7,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Login: React.FC = () => {
-  // LEARNING: useState hook for managing form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,22 +17,16 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
 
   /**
-   * LEARNING: Event handler for form submission
-   * 
    * @param e - Form event
    */
   const handleSubmit = async (e: React.FormEvent) => {
-    // LEARNING: Prevent default form submission (page reload)
     e.preventDefault();
     
     setError('');
     setLoading(true);
 
     try {
-      // LEARNING: Call login function from AuthContext
       await login(email, password);
-      
-      // LEARNING: Navigate to home page after successful login
       navigate('/');
     } catch (err: any) {
       setError(err.message);
@@ -140,15 +128,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
-
-/**
- * TODO (LEARNING): Add form validation
- * 
- * CHALLENGE: Add client-side validation before submitting
- * - Email format validation
- * - Password minimum length
- * - Show validation errors below each field
- * 
- * HINT: Create a validateForm() function
- */
 

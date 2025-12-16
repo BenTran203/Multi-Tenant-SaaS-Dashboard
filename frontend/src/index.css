@@ -1,14 +1,4 @@
-/**
- * 🌿 NATURE CHAT - GLOBAL STYLES
- * 
- * LEARNING: Tailwind CSS directives
- * - @tailwind base: Browser resets and base element styles
- * - @tailwind components: Reusable component class definitions
- * - @tailwind utilities: Utility classes for styling (like bg-grass-500)
- * 
- * WHY?: Separating these layers helps organize your styles and allows
- * Tailwind to optimize and tree-shake unused CSS in production.
- */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,27 +6,20 @@
 
 /**
  * 📜 CUSTOM SCROLLBAR STYLES
- * 
- * LEARNING: We customize scrollbars to match our nature theme
- * - scrollbar-width: For Firefox
- * - ::-webkit-scrollbar: For Chrome, Safari, Edge
- * 
- * WHY?: Default scrollbars look out of place in custom-themed apps.
- * Custom scrollbars improve the overall aesthetic consistency.
  */
 @layer base {
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #22c55e #e8e4df; /* grass green thumb, stone track */
+    scrollbar-color: #22c55e #e8e4df; 
   }
   
-  /* Dark mode Firefox scrollbar */
+
   .dark * {
     scrollbar-color: #22c55e #2f2d2a;
   }
 
-  /* Chrome/Safari/Edge scrollbar */
+
   *::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -55,7 +38,7 @@
     @apply bg-grass-600;
   }
 
-  /* Custom text selection color */
+
   ::selection {
     @apply bg-grass-400 text-white;
   }
@@ -63,11 +46,6 @@
 
 /**
  * BASE ELEMENT STYLES
- * 
- * - Light mode: cream background with dark text
- * - Dark mode: dark brown-black background with light text
- * - font-sans: Uses Inter font (clean, readable)
- * - antialiased: Makes fonts look smoother
  */
 @layer base {
   /* Body base styles - changes based on light/dark mode */
@@ -159,9 +137,6 @@
 
 /**
  * 🎬 CUSTOM UTILITY CLASSES
- * 
- * LEARNING: Add extra utility classes for special animations
- * and effects that Tailwind doesn't provide by default.
  */
 @layer utilities {
   /* Smooth bounce animation on hover */

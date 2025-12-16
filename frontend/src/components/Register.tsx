@@ -1,7 +1,5 @@
 /**
  * REGISTER COMPONENT
- * 
- * LEARNING: Similar to Login component but with additional fields
  */
 
 import React, { useState } from 'react';

@@ -1,11 +1,4 @@
-/**
- * ⚠️ SERVER DANGER ZONE COMPONENT
- * 
- * LEARNING: Destructive Actions Section
- * - Leave server (with ownership protection)
- * - Transfer ownership (if there are other members)
- * - Delete server (owner only)
- */
+
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -358,12 +351,3 @@ export function ServerDangerZone({ server, isOwner, currentUserId }: ServerDange
   );
 }
 
-/**
- * KEY FEATURES:
- * 
- * 1. Leave Server - With owner protection
- * 2. Transfer Ownership - Search and select new owner
- * 3. Delete Server - Permanent deletion (owner only)
- * 4. Modal Confirmations - Prevent accidental actions
- * 5. Error Handling - User-friendly error messages
- */

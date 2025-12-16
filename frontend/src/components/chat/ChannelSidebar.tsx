@@ -1,12 +1,5 @@
 /**
  * 📋 CHANNEL SIDEBAR - Middle Panel
- *
- * LEARNING: Channel List Component
- * - Shows all channels in selected server
- * - Create new channels (admin only)
- * - Select channel to view messages
- *
- * SLACK-STYLE: Medium-width panel with channel names
  */
 
 import { useState } from "react";
@@ -50,10 +43,6 @@ export function ChannelSidebar({
 
   /**
    * CREATE CHANNEL HANDLER
-   *
-   * LEARNING: POST to /servers/:id/channels
-   * - Creates new channel in current server
-   * - Only server admin can create channels (backend checks this)
    */
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,27 +76,27 @@ export function ChannelSidebar({
 
   return (
     <>
-      {/* LEARNING: Medium-Width Sidebar */}
       <div className="w-64 bg-theme-surface dark:bg-theme-dark-surface border-r border-theme-primary/20 dark:border-theme-primary/30 flex flex-col">
         {/* Header with server name */}
         <div className="h-16 border-b border-theme-primary/20 dark:border-theme-primary/30 px-4 flex items-center justify-between">
           <h2 className="font-pixel text-sm text-nature-bark dark:text-nature-cream truncate">
             {channels[0]?.server?.name || "Server"}
           </h2>
-          
-          {/* Server settings icon - only show for server owner */}
-          {selectedServerId && servers.find(s => s.id === selectedServerId)?.ownerId === user?.id && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/server/${selectedServerId}/settings`);
-              }}
-              className="p-2 hover:bg-nature-stone dark:hover:bg-dark-hover rounded-xl transition-colors"
-              title="Server Settings"
-            >
-              <Settings size={14} />
-            </button>
-          )}
+
+          {selectedServerId &&
+            servers.find((s) => s.id === selectedServerId)?.ownerId ===
+              user?.id && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/server/${selectedServerId}/settings`);
+                }}
+                className="p-2 hover:bg-nature-stone dark:hover:bg-dark-hover rounded-xl transition-colors"
+                title="Server Settings"
+              >
+                <Settings size={14} />
+              </button>
+            )}
         </div>
 
         {/* Channel list */}
@@ -126,7 +115,6 @@ export function ChannelSidebar({
             </button>
           </div>
 
-          {/* LEARNING: Channel List Mapping */}
           <div className="space-y-1">
             {channels.map((channel) => (
               <button
@@ -155,7 +143,6 @@ export function ChannelSidebar({
             ))}
           </div>
 
-          {/* LEARNING: Empty State */}
           {channels.length === 0 && (
             <div className="text-center py-8">
               <div className="text-3xl mb-2">🌱</div>
@@ -234,13 +221,3 @@ export function ChannelSidebar({
     </>
   );
 }
-
-/**
- * KEY FEATURES:
- *
- * 1. Channel List - Shows all channels in server
- * 2. Active Highlight - Selected channel is highlighted
- * 3. Create Channel - Modal form
- * 4. Empty State - Friendly message when no channels
- * 5. Hash Icons - Discord-style # prefix
- */

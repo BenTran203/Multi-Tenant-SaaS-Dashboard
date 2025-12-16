@@ -82,6 +82,33 @@ export const setupSocketHandlers = (io) => {
   io.on("connection", async (socket) => {
     console.log(`✅ User connected: ${socket.user.username} (${socket.id})`);
 
+    // ============================================
+    // 🌍 GLOBAL PRESENCE: Auto-join all servers (Discord-style)
+    // ============================================
+    try {
+      const userServers = await prisma.serverMember.findMany({
+        where: { userId: socket.user.id },
+        select: { serverId: true },
+      });
+
+      for (const { serverId } of userServers) {
+        socket.join(`server-${serverId}`);
+        addUserPresence(serverId, socket.user.id);
+
+        socket.to(`server-${serverId}`).emit("user-online", {
+          userId: socket.user.id,
+          username: socket.user.username,
+          avatarUrl: socket.user.avatarUrl,
+        });
+
+        console.log(`🟢 ${socket.user.username} auto-joined server ${serverId}`);
+      }
+
+      console.log(`✅ ${socket.user.username} is now online in ${userServers.length} servers`);
+    } catch (error) {
+      console.error("Auto-join servers error:", error);
+    }
+
     // --------------------------------------------
     // JOIN SERVER
     // --------------------------------------------
@@ -102,7 +129,7 @@ export const setupSocketHandlers = (io) => {
           return;
         }
 
-        // Join the Socket.io room for this server
+        // Join the Socket.io room for this server (if not already joined)
         socket.join(`server-${serverId}`);
         addUserPresence(serverId, socket.user.id);
 
@@ -401,13 +428,7 @@ export const setupSocketHandlers = (io) => {
   });
 };
 
-// ============================================
-// PRESENCE HANDLERS (Online/Offline Status)
-// ============================================
-// 🔨 TODO: Implement full presence tracking
-//   - Broadcast user online status to channel members
-//   - Track last seen timestamp
-//   - Handle reconnection logic
+
 export const setupPresenceHandlers = (io) => {
   io.on("connection", (socket) => {
     console.log(`✅ ${socket.user.username} is online`);
@@ -419,44 +440,3 @@ export const setupPresenceHandlers = (io) => {
   });
 };
 
-// ============================================
-// LEARNING NOTES
-// ============================================
-/**
-//  * SOCKET.IO EVENT FLOW:
-//  * 
-//  * 1. CLIENT CONNECTS
-//  *    const socket = io('http://localhost:5000', { auth: { token: 'jwt' } });
-//  * 
-//  * 2. SERVER AUTHENTICATES
-//  *    io.use() middleware verifies token, attaches socket.user
-//  * 
-//  * 3. CONNECTION ESTABLISHED
-//  *    'connection' event fires, socket.id assigned
-//  * 
-//  * 4. CLIENT JOINS CHANNEL
-//  *    socket.emit('join-channel', { channelId: 'abc' });
-//  *    Server adds socket to room 'abc'
-//  * 
-//  * 5. CLIENT SENDS MESSAGE
-//  *    socket.emit('send-message', { channelId: 'abc', content: 'Hi!' });
-//  *    Server saves to DB and broadcasts to room 'abc'
-//  * 
-//  * 6. ALL CLIENTS IN ROOM RECEIVE
-//    socket.on('new-message', ({ message }) => { /* Display in UI */
-//  *
-//  * 7. CLIENT DISCONNECTS
-//  *    'disconnect' event fires, socket removed from all rooms
-//  *
-//  * BROADCASTING PATTERNS:
-//  * - socket.emit('event', data)          → THIS socket only
-//  * - socket.to(room).emit('event', data) → Everyone in room EXCEPT this socket
-//  * - io.to(room).emit('event', data)     → EVERYONE in room INCLUDING this socket
-//  * - socket.broadcast.emit('event', data)→ Everyone EXCEPT this socket (all rooms)
-//  * - io.emit('event', data)              → ALL connected sockets (broadcast to all)
-//  *
-//  * ROOMS VS SOCKET:
-//  * - io.on('connection')      → Server-level event (NEW connection)
-//  * - socket.on('disconnect')  → Socket-level event (THIS connection ends)
-//  * - socket.on('custom-event')→ Listen to client events (inside connection handler)
-//  */

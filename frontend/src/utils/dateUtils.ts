@@ -1,20 +1,7 @@
-/**
- * 📅 DATE UTILITIES - Helper Functions for Date Formatting
- * 
- * LEARNING: Utility Functions
- * - Reusable helper functions
- * - Keep logic DRY (Don't Repeat Yourself)
- * - Easy to test and maintain
- */
+
 
 /**
  * FORMAT DISTANCE TO NOW
- * 
- * Converts a date to relative time string
- * - "just now" for < 1 minute
- * - "5 minutes ago"
- * - "2 hours ago"
- * - "3 days ago"
  * 
  * @param date - Date to format
  * @returns Formatted string
@@ -55,9 +42,6 @@ export function formatDistanceToNow(date: Date): string {
 
 /**
  * FORMAT TIME
- * 
- * Formats time as HH:MM (24-hour format)
- * 
  * @param date - Date to format
  * @returns Time string (e.g., "14:30")
  */

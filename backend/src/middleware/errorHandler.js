@@ -2,25 +2,9 @@
  * ============================================================================
  * ERROR HANDLING MIDDLEWARE
  * ============================================================================
- * 
- * CONCEPT: Centralized Error Handling
- * Instead of writing `try/catch` and `res.status(500)` in every single route,
- * we let errors "bubble up" to this middleware.
- * 
- * MECHANISM:
- * Express identifies error handlers by their argument count: (err, req, res, next).
- * If you call `next(error)`, Express skips to this function.
+
  */
 
-/**
- * Global Error Handler
- * 
- * LOGIC:
- * 1. Log the error (essential for debugging).
- * 2. Determine Status Code (default to 500).
- * 3. Handle specific error types (Prisma, JWT, Validation).
- * 4. Send JSON response (hide stack trace in production).
- */
 export const errorHandler = (err, req, res, next) => {
   // 1. Log Error
   console.error('❌ Error occurred:', {
@@ -69,12 +53,7 @@ export const errorHandler = (err, req, res, next) => {
   });
 };
 
-/**
- * 404 Not Found handler
- * 
- * LEARNING: This runs when no route matches the request
- * Must be added AFTER all other routes
- */
+
 export const notFoundHandler = (req, res) => {
   res.status(404).json({
     error: 'Route not found',
@@ -83,50 +62,6 @@ export const notFoundHandler = (req, res) => {
   });
 };
 
-/**
- * LEARNING: How to use error handling in routes:
- * 
- * METHOD 1 - Async/Await with try-catch:
- * router.get('/users', async (req, res, next) => {
- *   try {
- *     const users = await prisma.user.findMany();
- *     res.json(users);
- *   } catch (error) {
- *     next(error); // Pass error to error handler
- *   }
- * });
- * 
- * METHOD 2 - Using asyncHandler wrapper (cleaner):
- * router.get('/users', asyncHandler(async (req, res) => {
- *   const users = await prisma.user.findMany();
- *   res.json(users);
- * }));
- * 
- * METHOD 3 - Throwing custom errors:
- * if (!user) {
- *   const error = new Error('User not found');
- *   error.statusCode = 404;
- *   throw error;
- * }
- */
-
-/**
- * LEARNING: Async handler wrapper (prevents try-catch repetition)
- * 
- * BEFORE:
- * router.get('/route', async (req, res, next) => {
- *   try {
- *     // logic
- *   } catch (error) {
- *     next(error);
- *   }
- * });
- * 
- * AFTER:
- * router.get('/route', asyncHandler(async (req, res) => {
- *   // logic (errors automatically caught!)
- * }));
- */
 export const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };

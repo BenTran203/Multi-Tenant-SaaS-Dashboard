@@ -1,13 +1,10 @@
 // This is your Prisma schema file
-// LEARNING: Prisma is an ORM (Object-Relational Mapping) tool
 // It helps you interact with your database using JavaScript/TypeScript instead of raw SQL
 
-// LEARNING: Generator tells Prisma to create a JavaScript/TypeScript client
 generator client {
   provider = "prisma-client-js"
 }
 
-// LEARNING: Datasource defines which database you're using (PostgreSQL in our case)
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -16,7 +13,6 @@ datasource db {
 // ============================================
 // USER MODEL
 // ============================================
-// LEARNING: This represents the "users" table in your database
 model User {
   id        String   @id @default(uuid()) // Universally Unique Identifier
   email     String   @unique              // Must be unique across all users
@@ -34,14 +30,12 @@ model User {
   serverMembers ServerMember[]                             // Servers they're a member of
   messages      Message[]                                  // Messages they sent
 
-  // LEARNING: @map() changes the database column name (camelCase in code, snake_case in DB)
   @@map("users") // Table name in database
 }
 
 // ============================================
 // SERVER MODEL (like Discord servers/guilds)
 // ============================================
-// LEARNING: A server is a workspace/community
 
 
 model Server {
@@ -66,7 +60,6 @@ model Server {
 // ============================================
 // SERVER MEMBER MODEL (Many-to-Many relationship)
 // ============================================
-// LEARNING: This is a "join table" connecting users and servers
 // Why? Because a user can be in many servers, and a server can have many users
 model ServerMember {
   id       String       @id @default(uuid())
@@ -76,16 +69,13 @@ model ServerMember {
   nickname String? 
   joinedAt DateTime     @default(now()) @map("joined_at")
 
-  // LEARNING: RELATIONSHIPS
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  // LEARNING: A user can only be a member of a server once
   @@unique([userId, serverId])
   @@map("server_members")
 }
 
-// LEARNING: ENUM - A field can only have specific values
 enum MemberRole {
   ADMIN  // Can manage server, channels, members
   MEMBER // Regular user
@@ -94,7 +84,6 @@ enum MemberRole {
 // ============================================
 // CHANNEL MODEL
 // ============================================
-// LEARNING: Channels are chat rooms within a server
 model Channel {
   id        String      @id @default(uuid())
   name      String
@@ -104,14 +93,12 @@ model Channel {
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
 
-  // LEARNING: RELATIONSHIPS
   server   Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
   messages Message[]
 
   @@map("channels")
 }
 
-// LEARNING: Channel types (TEXT for now, VOICE for later phases)
 enum ChannelType {
   TEXT
   VOICE
@@ -120,7 +107,7 @@ enum ChannelType {
 // ============================================
 // MESSAGE MODEL
 // ============================================
-// LEARNING: Messages are the actual chat messages users send
+
 model Message {
   id        String   @id @default(uuid())
   content   String   @db.Text // @db.Text allows longer messages than String
@@ -130,7 +117,6 @@ model Message {
   updatedAt DateTime @updatedAt @map("updated_at")
   deleted   Boolean  @default(false) // Soft delete (mark as deleted instead of removing)
 
-  // LEARNING: RELATIONSHIPS
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
@@ -140,10 +126,6 @@ model Message {
 // ============================================
 // DATABASE INDEXING (For Performance)
 // ============================================
-// LEARNING: Indexes make database queries faster
-// Think of it like an index in a book - helps you find things quickly
 
-// TODO (LEARNING - Phase 3): Add indexes for frequently queried fields
-// Example: @@index([channelId, createdAt]) on Message model
-// WHY?: When you load messages for a channel, sorted by time, this makes it MUCH faster
+// TODO : Add indexes for frequently queried fields
 

@@ -2,16 +2,6 @@
  * ============================================================================
  * AUTHENTICATION CONTROLLER
  * ============================================================================
- *
- * CONCEPT: Authentication vs Authorization
- * - Authentication (AuthN): "Who are you?" (Login, Register)
- * - Authorization (AuthZ): "What are you allowed to do?" (Access Control)
- *
- * LOGIC FLOW:
- * 1. Client sends credentials (email/password).
- * 2. Server validates credentials against Database.
- * 3. Server issues a JWT (JSON Web Token).
- * 4. Client attaches JWT to future requests.
  */
 
 import bcrypt from "bcrypt";
@@ -22,15 +12,6 @@ import { resetPasswordEmail } from '../config/email.js';
 
 /**
  * Register a new user
- *
- * LOGIC:
- * 1. Check if email/username is taken.
- * 2. Hash the password (security critical!).
- * 3. Create user in DB.
- * 4. Issue JWT token immediately so they are logged in.
- *
- * POST /api/auth/register
- * Body: { email, username, password }
  */
 export const register = async (req, res) => {
   try {
@@ -50,9 +31,6 @@ export const register = async (req, res) => {
     }
 
     // 2. Hash password
-    // CONCEPT: Hashing
-    // We never store plain text passwords. We store a "hash" - a one-way scrambled version.
-    // '10' is the salt rounds (cost factor). Higher = safer but slower.
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -96,14 +74,6 @@ export const register = async (req, res) => {
 
 /**
  * Login a user
- *
- * LOGIC:
- * 1. Find user by email.
- * 2. Compare provided password with stored hash.
- * 3. If match, issue JWT.
- *
- * POST /api/auth/login
- * Body: { email, password }
  */
 export const login = async (req, res) => {
   try {
@@ -114,9 +84,6 @@ export const login = async (req, res) => {
       where: { email },
     });
 
-    // SECURITY NOTE: Specific error messages
-    // Trade-off: Better UX vs User Enumeration risk
-    // Mitigation: Rate limiting + account lockout (recommended for production)
     if (!user) {
       return res.status(401).json({
         error: "No account found with this email address",
@@ -125,7 +92,6 @@ export const login = async (req, res) => {
     }
 
     // 2. Verify password
-    // bcrypt.compare() hashes the input and checks if it matches the stored hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -158,16 +124,6 @@ export const login = async (req, res) => {
   }
 };
 
-/**
- * Get current user info
- *
- * LOGIC:
- * - This route is protected by `authenticate` middleware.
- * - The middleware verifies the JWT and attaches `req.user`.
- * - We simply return that user object.
- *
- * GET /api/auth/me
- */
 export const getCurrentUser = async (req, res) => {
   try {
     // req.user is populated by the middleware
@@ -183,14 +139,7 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-/**
- * Forgot Password (Development Mode)
- *
- * LOGIC:
- * - In a real app, we would send an email with a reset link.
- * - We will be using resend to send a reset URL token for confirmation
- * POST /api/auth/forgot-password
- */
+
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -235,8 +184,6 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
-//Reset Password - Step 2 (Verify Token & Update Password)
-//POST /api/auth/reset-password
 
 export const resetPassword = async (req, res) => {
   try {
@@ -291,9 +238,4 @@ export const resetPassword = async (req, res) => {
  * ============================================================================
  * SECURITY BEST PRACTICES
  * ============================================================================
- * ✅ DO:
- * - Hash passwords (bcrypt).
- * - Use HTTPS in production.
- * - Validate all inputs.
- * - Rate limit login attempts (prevent brute force).
  */

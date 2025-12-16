@@ -2,11 +2,6 @@
  * ============================================================================
  * CHANNEL ROUTES
  * ============================================================================
- * 
- * CONCEPT: Nested Resources
- * Channels belong to Servers.
- * - Create: POST /api/servers/:serverId/channels
- * - List:   GET  /api/servers/:serverId/channels
  */
 
 import express from 'express';
@@ -22,10 +17,7 @@ import {
 
 const router = express.Router();
 
-/**
- * POST /api/servers/:serverId/channels
- * Create a new channel in a server
- */
+
 router.post(
   '/servers/:serverId/channels',
   authenticate,
@@ -34,10 +26,7 @@ router.post(
   createChannel
 );
 
-/**
- * GET /api/servers/:serverId/channels
- * Get all channels in a server
- */
+
 router.get(
   '/servers/:serverId/channels',
   authenticate,

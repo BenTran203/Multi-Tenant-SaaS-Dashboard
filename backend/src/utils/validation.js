@@ -1,30 +1,7 @@
-/**
- * VALIDATION UTILITIES
- *
- * LEARNING: Input validation is CRITICAL for security and data integrity
- *
- * WHY VALIDATE?
- * 1. Security: Prevent SQL injection, XSS attacks, etc.
- * 2. Data integrity: Ensure data matches expected format
- * 3. Better UX: Return helpful error messages
- *
- */
+
 
 import { body, param, validationResult } from "express-validator";
 
-/**
- * Middleware to check validation results
- *
- * LEARNING: This checks if any validation rules failed
- * If so, it returns a 400 error with details
- *
- * HOW TO USE:
- * router.post('/route',
- *   [...validationRules],  // Array of validation rules
- *   handleValidationErrors, // This middleware
- *   routeHandler           // Your actual route handler
- * );
- */
 export const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -47,9 +24,6 @@ export const handleValidationErrors = (req, res, next) => {
 // VALIDATION RULES
 // ============================================
 
-/**
- * User registration validation
- */
 export const registerValidation = [
   body("email")
     .trim()
@@ -67,9 +41,7 @@ export const registerValidation = [
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
-  // TODO (LEARNING): Add stronger password validation
-  // CHALLENGE: Require at least one uppercase, one lowercase, one number
-  // HINT: Use .matches(/regex/) and create a regex pattern
+
 ];
 
 /**
@@ -181,27 +153,3 @@ export const profileUpdateValidation = [
     .isURL()
     .withMessage("Avatar URL must be a valid URL"),
 ];
-/**
- * LEARNING: Example usage in routes:
- *
- * import { registerValidation, handleValidationErrors } from './utils/validation.js';
- *
- * router.post('/register',
- *   registerValidation,          // Validate the input
- *   handleValidationErrors,       // Check for errors
- *   authController.register       // Handle the request
- * );
- *
- * If validation fails, the request never reaches authController.register
- * Instead, it returns:
- * {
- *   "error": "Validation failed",
- *   "details": [
- *     {
- *       "field": "email",
- *       "message": "Must be a valid email address",
- *       "value": "invalid-email"
- *     }
- *   ]
- * }
- */

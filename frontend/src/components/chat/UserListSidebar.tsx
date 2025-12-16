@@ -1,11 +1,11 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePresence } from "../../contexts/PresenceContext";
 import { User } from "../../types";
 import { UserProfileCard } from "../ui/UserProfileCard";
 
 interface UserListSidebarProps {
-  serverId: string; // Current server UUID
+  serverId: string; // Current server UUID (kept for future use)
   members: User[]; // All server members (from API)
 }
 
@@ -15,7 +15,7 @@ interface UserListSidebarProps {
  * @param members - Array of all users in this server
  */
 export function UserListSidebar({ serverId, members }: UserListSidebarProps) {
-  const { onlineUsers, isUserOnline, joinServer } = usePresence();
+  const { isUserOnline } = usePresence();
 
   // SAFETY: Ensure members is always an array
   const safeMembers = members || [];
@@ -41,13 +41,8 @@ export function UserListSidebar({ serverId, members }: UserListSidebarProps) {
     setHoveredUser(null);
   };
 
-  useEffect(() => {
-    console.log(`🔌 Joining presence for server ${serverId}`);
-    joinServer(serverId);
-
-    // Optional: Add cleanup to leave presence
-    // return () => leaveServer(serverId);
-  }, [serverId, joinServer]);
+  // ✅ GLOBAL PRESENCE: No need to manually join server
+  // User is automatically online in all their servers (Discord-style)
 
   return (
     <div className="w-64 h-screen bg-theme-surface dark:bg-theme-dark-surface border-l border-theme-primary/20 dark:border-theme-primary/30 flex flex-col overflow-hidden">

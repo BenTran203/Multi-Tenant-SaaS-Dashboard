@@ -34,25 +34,11 @@ export function Chat() {
   const [loading, setLoading] = useState(true);
   const [serverMembers, setServerMembers] = useState<User[]>([]);
 
-  /**
-   * LEARNING: Data Fetching on Mount
-   *
-   * useEffect with empty dependency array runs once on component mount
-   * - Fetch user's servers from API
-   * - Select first server by default
-   */
+
   useEffect(() => {
     fetchServers();
   }, []);
 
-  /**
-   * LEARNING: Dependent Data Fetching
-   *
-   * When selectedServerId changes, fetch channels for that server
-   * - useEffect with [selectedServerId] dependency
-   * - Runs whenever selectedServerId updates
-   * - Apply server theme when server changes
-   */
   useEffect(() => {
     if (selectedServerId) {
       fetchChannels(selectedServerId);
@@ -82,11 +68,6 @@ export function Chat() {
 
   /**
    * FETCH SERVERS
-   *
-   * LEARNING: API Call Pattern
-   * - GET request to backend
-   * - Update state with response
-   * - Handle errors gracefully
    */
   const fetchServers = async () => {
     try {
@@ -108,9 +89,6 @@ export function Chat() {
 
   /**
    * FETCH CHANNELS
-   *
-   * Get all channels for a specific server
-   *
    * @param serverId - UUID of server to fetch channels for
    */
   const fetchChannels = async (serverId: string) => {
@@ -132,10 +110,6 @@ export function Chat() {
 
   /**
    * LEARNING: Event Handlers
-   *
-   * Functions passed as props to child components
-   * - Child components call these to update parent state
-   * - This is called "lifting state up"
    */
   const handleServerSelect = (serverId: string) => {
     setSelectedServerId(serverId);
@@ -148,9 +122,6 @@ export function Chat() {
 
   /**
    * LEARNING: Callback Function Pattern
-   *
-   * When a new server is created, add it to the list
-   * Passed to ServerSidebar component
    */
   const handleServerCreated = (newServer: Server) => {
     setServers([...servers, newServer]);
@@ -198,43 +169,8 @@ export function Chat() {
           user={user}
         />
       )}
-      {/* 3️⃣ RIGHT AREA: Chat Messages + Input */}
-      {/* 
-        ===================================================
-        OOP SCROLL PATTERN - PARENT CONTAINER RESPONSIBILITY
-        ===================================================
-        
-        LEARNING: This div is the "Parent Class" that defines constraints
-        
-        THINK OF IT LIKE OOP INHERITANCE:
-        - Chat.tsx (Parent) = Abstract class defining container rules
-        - ChatArea (Child) = Concrete class implementing scroll behavior
-        - UserListSidebar (Child) = Another concrete class with same pattern
-        
-        PARENT'S RESPONSIBILITY:
-        ✅ Set bounds: h-screen (100vh) - "You can't be taller than viewport"
-        ✅ Lock overflow: overflow-hidden - "I won't let you create page scroll"
-        ✅ Layout children: flex flex-col - "Stack vertically"
-        
-        CHILD'S RESPONSIBILITY:
-        ✅ Respect bounds: Stay within parent's height
-        ✅ Handle own scroll: overflow-y-auto on their content
-        ✅ Share space: Use flex-1 to fill available space
-        
-        WHY h-screen + overflow-hidden HERE?
-        - Creates "scroll boundary" at viewport level
-        - Forces children to work WITHIN 100vh
-        - Prevents cascading overflow to <body>
-        
-        RESULT: Page NEVER scrolls, only components inside do!
-      */}
+
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Header with theme toggle and logout */}
-        {/* 
-          LEARNING: Fixed Height Header
-          - h-16 = Fixed 64px height
-          - flex-shrink-0 = Prevents header from shrinking
-        */}
         <div className="h-16 flex-shrink-0 border-b border-theme-primary/20 dark:border-theme-primary/30 bg-theme-surface dark:bg-theme-dark-surface px-6 flex items-center justify-between">
           <div>
             {selectedChannelId && (
@@ -258,8 +194,6 @@ export function Chat() {
         {selectedChannelId ? (
           <ChatArea channelId={selectedChannelId} />
         ) : (
-          // LEARNING: Empty State
-          // Show friendly message when no channel is selected
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4 animate-bounce-gentle">🌳</div>
@@ -279,15 +213,3 @@ export function Chat() {
     </div>
   );
 }
-
-/**
- * KEY CONCEPTS:
- *
- * 1. State Management - Multiple related states (servers, channels, selection)
- * 2. Data Fetching - useEffect for API calls
- * 3. Parent-Child Communication - Props and callbacks
- * 4. Lifting State Up - Parent manages state, children update it
- * 5. Conditional Rendering - Show/hide based on state
- * 6. Layout with Flexbox - 3-column responsive layout
- * 7. Empty States - Friendly UI when no data
- */

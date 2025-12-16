@@ -2,13 +2,6 @@
  * ========================================
  * MAIN SERVER FILE - Entry Point
  * ========================================
- *
- * Sets up:
- * - Express server (REST API)
- * - Socket.io (WebSocket for real-time)
- * - Database connection (Prisma)
- * - Middleware & Routes
- * - Error handling
  */
 
 import express from "express";
@@ -64,8 +57,6 @@ try {
   console.log("✅ Server code regeneration cron job started");
 } catch (error) {
   console.error("❌ Failed to start cron jobs:", error);
-  // Don't exit - cron failure shouldn't crash the entire server
-  //
 }
 
 // ============================================
@@ -190,52 +181,3 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();
-
-// ============================================
-// 📚 LEARNING NOTES
-// ============================================
-
-/**
- * REQUEST FLOW (HTTP/REST):
- *
- * Client Request
- *   ↓
- * Middleware Chain (CORS → JSON Parser → Rate Limiter → Logger)
- *   ↓
- * Router (matches URL to route)
- *   ↓
- * Route Middleware (validation → error checking)
- *   ↓
- * Controller (business logic, database queries)
- *   ↓
- * Response (res.json)
- *   ↓
- * Error Handler (if error occurs)
- */
-
-/**
- * WEBSOCKET FLOW (Socket.io):
- *
- * Client Connects
- *   ↓
- * Socket Middleware (authenticate token)
- *   ↓
- * Connection Event ('connection' fires)
- *   ↓
- * Client Emits Event (e.g., 'send-message')
- *   ↓
- * Server Handler (save to DB, broadcast to room)
- *   ↓
- * Clients Receive Event ('new-message')
- */
-
-/**
- * 🔨 TASKS TO IMPLEMENT:
- *
- *
- * 2. Add More Features (See .github/copilot-instructions.md)
- *    - Typing indicators
- *    - User presence (online/offline)
- *    - Message reactions
- *    - File uploads
- */
