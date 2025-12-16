@@ -5,7 +5,7 @@ import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { ArrowLeft, User, Mail, Calendar, Save, Camera } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, Save } from 'lucide-react';
 import { api } from '../services/api';
 
 export function Profile() {
@@ -128,12 +128,6 @@ export function Profile() {
                     user?.username.slice(0, 2).toUpperCase()
                   )}
                 </div>
-                {/* <button
-                  className="absolute bottom-2 right-2 w-8 h-8 bg-grass-500 hover:bg-grass-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
-                  title="Change Avatar"
-                >
-                  <Camera size={16} />
-                </button> */}
               </div>
 
               {/* User Info */}
