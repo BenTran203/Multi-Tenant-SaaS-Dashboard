@@ -1,0 +1,47 @@
+# ============================================
+# DOCKER IGNORE FILE
+# ============================================
+# Excludes files from Docker build context
+# Speeds up builds and reduces image size
+
+# Node modules (installed during build)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files (use --env-file or docker-compose)
+.env
+.env.*
+!.env.example
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Development files
+.vscode
+.idea
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts (if any)
+dist/
+build/
