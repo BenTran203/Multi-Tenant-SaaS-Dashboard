@@ -35,11 +35,12 @@ WORKDIR /app
 # Copy dependencies from previous stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy Prisma schema
-COPY prisma ./prisma
-
 # Copy package files
 COPY package*.json ./
+
+# Copy Prisma schema and migrations
+COPY prisma/schema.prisma ./prisma/schema.prisma
+COPY prisma/migrations ./prisma/migrations
 
 # Generate Prisma Client
 RUN npx prisma generate
