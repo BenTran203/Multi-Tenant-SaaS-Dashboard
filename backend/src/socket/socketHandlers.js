@@ -236,66 +236,6 @@ export const setupSocketHandlers = (io) => {
           },
         });
 
-        socket.on("typing-start", async ({ channelId }) => {
-          try {
-            //Verify user has access to channel
-            //prisma.channel might be prisma.Channel
-            const channel = await prisma.channel.findUnique({
-              where: { id: channelId },
-              include: { server: true },
-            });
-
-            if (!channel) return;
-            const isMember = await prisma.serverMember.findUnique({
-              where: {
-                userId_serverId: {
-                  userId: socket.user.id,
-                  serverId: channel.serverId,
-                },
-              },
-            });
-            if (!isMember) return;
-            socket.to(channelId).emit("user-typing", {
-              userId: socket.user.id,
-              username: socket.user.username,
-              channelId,
-            });
-          } catch (error) {
-            console.error("Typing start error:", error);
-          }
-        });
-        // --------------------------------------------
-        // STOP TYPING INDICATORS
-        // --------------------------------------------
-
-        socket.on("typing-stop", async ({ channelId }) => {
-          try {
-            //Verify user has access to channel
-            //prisma.channel might be prisma.Channel
-            const channel = await prisma.channel.findUnique({
-              where: { id: channelId },
-              include: { server: true },
-            });
-
-            if (!channel) return;
-            const isMember = await prisma.serverMember.findUnique({
-              where: {
-                userId_serverId: {
-                  userId: socket.user.id,
-                  serverId: channel.serverId,
-                },
-              },
-            });
-            if (!isMember) return;
-            socket.to(channelId).emit("user-stopped-typing", {
-              userId: socket.user.id,
-              username: socket.user.username,
-              channelId,
-            });
-          } catch (error) {
-            console.error("Typing stop error:", error);
-          }
-        });
         // Broadcast to everyone in the channel (including sender)
         io.to(channelId).emit("new-message", { message });
 
