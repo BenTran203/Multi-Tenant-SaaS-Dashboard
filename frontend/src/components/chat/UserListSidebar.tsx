@@ -14,7 +14,7 @@ interface UserListSidebarProps {
  * @param serverId - Current server being viewed
  * @param members - Array of all users in this server
  */
-export function UserListSidebar({ serverId, members }: UserListSidebarProps) {
+export function UserListSidebar({ members }: UserListSidebarProps) {
   const { isUserOnline } = usePresence();
 
   // SAFETY: Ensure members is always an array

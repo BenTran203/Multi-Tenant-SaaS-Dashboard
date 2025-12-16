@@ -11,8 +11,6 @@
 import { useState, useEffect } from 'react';
 import { Crown, UserX, Edit2, Check, X } from 'lucide-react';
 import { api } from '../../services/api';
-import { Button } from '../ui/Button';
-
 interface ServerMember {
   id: string;
   userId: string;
