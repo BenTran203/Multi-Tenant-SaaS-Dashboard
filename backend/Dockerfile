@@ -1,16 +1,11 @@
 # ============================================
 # CHATWAVE BACKEND DOCKERFILE
 # ============================================
-# 
-# Production-ready Node.js + Prisma backend
-# 
-# Build: docker build -t chatwave-backend .
-# Run:   docker run -p 5000:5000 --env-file .env chatwave-backend
 
 # ============================================
-# STAGE 1: Dependencies
+# STAGE 1: Development
 # ============================================
-FROM node:20-alpine AS deps
+FROM node:20-alpine AS development
 
 # Install OpenSSL (required by Prisma)
 RUN apk add --no-cache openssl
@@ -19,68 +14,48 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies (including dev dependencies for Prisma)
-RUN npm ci
+# Copy prisma schema for generation
+COPY prisma ./prisma/
+RUN npx prisma generate
+
+# Copy source code
+COPY src ./src/
+
+EXPOSE 5000
+
+# Start with nodemon for hot reload
+CMD ["npm", "run", "dev"]
 
 # ============================================
-# STAGE 2: Build (Prisma Generation)
+# STAGE 2: Production
 # ============================================
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS production
 
+# Install OpenSSL (required by Prisma)
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy dependencies from previous stage
-COPY --from=deps /app/node_modules ./node_modules
-
 # Copy package files
 COPY package*.json ./
+RUN npm ci
 
-# Copy Prisma schema and migrations
-COPY prisma/schema.prisma ./prisma/schema.prisma
-COPY prisma/migrations ./prisma/migrations
+# Install prisma globally for migrations
+RUN npm install -g prisma
 
-# Generate Prisma Client
+# Copy prisma schema and migrations
+COPY prisma ./prisma/
 RUN npx prisma generate
 
 # Copy source code
-COPY src ./src
+COPY src ./src/
 
-# ============================================
-# STAGE 3: Production Runtime
-# ============================================
-FROM node:20-alpine AS production
-
-# Install OpenSSL and dumb-init (for proper signal handling)
-RUN apk add --no-cache openssl dumb-init
-
-WORKDIR /app
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-# Copy built artifacts from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/src ./src
-COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
-
-# Switch to non-root user
-USER nodejs
-
-# Expose port (adjust if different)
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Start server with dumb-init (handles signals properly)
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "src/server.js"]
+# Run migrations and start the server
+CMD sh -c "npx prisma migrate deploy && node src/server.js"
 
 # ============================================
 # ENVIRONMENT VARIABLES (set via .env or docker-compose)
