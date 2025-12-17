@@ -146,8 +146,6 @@ const startServer = async () => {
 
     httpServer.listen(PORT, () => {
       console.log("\n🚀 Server is running!");
-      console.log(`📡 REST API: http://localhost:${PORT}`);
-      console.log(`⚡ WebSocket: ws://localhost:${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (error) {

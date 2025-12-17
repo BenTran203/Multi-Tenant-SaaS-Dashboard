@@ -24,6 +24,9 @@ export const createWebServer = (app) => {
       console.error("HTTPS certificates not found, using HTTP instead");
       httpServer = createServer(app);
     }
+  } else {
+    console.log("🌐 HTTP server created");
+    httpServer = createServer(app);
   }
   return httpServer;
 };
