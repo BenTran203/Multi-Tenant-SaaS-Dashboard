@@ -9,6 +9,7 @@ import path from "path";
  */
 
 export const createWebServer = (app) => {
+  let httpServer;
   const useHttps =
     process.env.NODE_ENV === "production" || process.env.USE_HTTPS === "true";
   if (useHttps) {
@@ -24,6 +25,5 @@ export const createWebServer = (app) => {
       httpServer = createServer(app);
     }
   }
-  console.log("🌐 HTTP server created");
-  return createServer(app);
+  return httpServer;
 };
