@@ -145,7 +145,7 @@ const startServer = async () => {
     await connectDatabase();
 
     httpServer.listen(PORT, () => {
-      console.log("\n🚀 Server is running!");
+      console.log(`\n🚀 Server is running at ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (error) {

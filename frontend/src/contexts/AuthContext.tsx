@@ -7,8 +7,8 @@ import type { User } from '../types';
 
 /* TypeScript Interface*/
 interface AuthContextType {
-  user: User | null;              // Current logged-in user (null if not logged in)
-  loading: boolean;               // True while checking if user is logged in
+  user: User | null;              
+  loading: boolean;             
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   forgotPass: (email: string, newpassword: string, confirmPassword: string) => Promise<void>;
@@ -117,9 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
+   * REGISTER FUNCTION
+   * LEARNING: After registration, DON'T auto-login - user must verify email first
+   * 
    * @param username - Desired username
    * @param email - User's email
    * @param password - User's password
+   * @returns Response data with requiresVerification flag
    */
   const register = async (username: string, email: string, password: string) => {
     const response = await api.post('/api/auth/register', { 
@@ -128,12 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password 
     });
     
-    localStorage.setItem('chatwave-token', response.data.token);
-    localStorage.setItem('chatwave-user', JSON.stringify(response.data.user));
-    
-    setUser(response.data.user);
-    
-    initSocket(response.data.token);
+    // DON'T save token or initialize socket yet - email needs to be verified
+    // Registration page will redirect to CheckEmail page
+    return response.data;
   };
 
   /**

@@ -28,6 +28,7 @@ export interface User {
   password?: string;        // Optional, never sent from backend
   avatarUrl?: string;       // Optional avatar URL
   bio?: string;             // Optional user bio
+  isEmailVerified?: boolean; // Email verification status
   createdAt: string;        // ISO date string
   joinedAt?: string;        // Optional - when user joined a server (ServerMember.joinedAt)
 }

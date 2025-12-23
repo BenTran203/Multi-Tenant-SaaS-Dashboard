@@ -12,6 +12,8 @@ import {
   getCurrentUser,
   requestPasswordReset,
   resetPassword,
+  verifyEmail,
+  resendVerification,
 } from "../controllers/authController.js";
 import { authenticate } from "../middleware/auth.js";
 import {
@@ -22,10 +24,13 @@ import {
 
 const router = express.Router();
 
+// Registration & Login
 router.post("/register", registerValidation, handleValidationErrors, register);
-
-// Login route
 router.post("/login", loginValidation, handleValidationErrors, login);
+
+// Email verification
+router.post("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerification);
 
 // Password reset route
 router.post("/forgot-password", requestPasswordReset);

@@ -20,6 +20,9 @@ model User {
   password  String                         // Will store HASHED password 
   avatarUrl String?  @map("avatar_url")   // Optional field
   bio       String?  @db.Text 
+  isEmailVerified        Boolean   @default(false) @map("is_email_verified")
+  emailVerificationToken String?   @map("email_verification_token")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
   passwordResetToken     String?  @map("password_reset_token")
   passwordResetExpires   DateTime? @map("password_reset_expires")
   createdAt DateTime @default(now()) @map("created_at")

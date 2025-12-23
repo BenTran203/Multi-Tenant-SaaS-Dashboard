@@ -5,7 +5,7 @@ import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { ArrowLeft, User, Mail, Calendar, Save } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, Save, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api';
 
 export function Profile() {
@@ -20,6 +20,11 @@ export function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Load user profile on mount
   useEffect(() => {
@@ -81,6 +86,36 @@ export function Profile() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError('');
+
+    try {
+      await api.delete('/api/users/me');
+      
+      // Account deleted successfully - logout and redirect
+      logout();
+      navigate('/register', { 
+        state: { 
+          message: 'Account deleted successfully. You can create a new account.' 
+        } 
+      });
+    } catch (err: any) {
+      if (err.response?.data?.errorType === 'OWNS_SERVERS') {
+        setDeleteError(
+          err.response.data.message + '. Servers: ' + 
+          err.response.data.ownedServers.map((s: any) => s.name).join(', ')
+        );
+      } else {
+        setDeleteError(
+          err.response?.data?.error || 'Failed to delete account. Please try again.'
+        );
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -242,6 +277,7 @@ export function Profile() {
 
             <Button
               variant="outline"
+              onClick={() => setShowDeleteModal(true)}
               className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               Delete Account
@@ -249,6 +285,62 @@ export function Profile() {
           </div>
         </Card>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full animate-pop-in">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                <AlertTriangle className="text-red-600 dark:text-red-400" size={32} />
+              </div>
+              <h2 className="text-2xl font-pixel text-red-600 dark:text-red-400 mb-2">
+                Delete Account?
+              </h2>
+              <p className="text-nature-bark dark:text-nature-stone text-sm">
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-4 mb-6">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 font-semibold mb-2">
+                ⚠️ Before deleting:
+              </p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Make sure you transfer ownership of your servers to other members, or delete the servers first.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl animate-wiggle">
+                <p className="text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Button
+                variant="primary"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete My Account'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError('');
+                }}
+                disabled={deleting}
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

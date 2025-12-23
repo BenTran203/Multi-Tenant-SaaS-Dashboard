@@ -24,6 +24,9 @@ router.put(
   updateProfile
 );
 
+//  Delete current user's account (alias)
+router.delete('/me', authenticate, deleteAccount);
+
 // Get current user's profile
 router.get('/profile', authenticate, getProfile);
 

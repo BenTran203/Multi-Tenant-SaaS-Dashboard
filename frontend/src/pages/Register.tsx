@@ -7,25 +7,22 @@
  * - User registration flow
  */
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
-import { Leaf } from 'lucide-react';
+import { Leaf, Check, X } from 'lucide-react';
 
 /**
  * REGISTER COMPONENT
- * 
- * Allows new users to create an account
  */
 export function Register() {
   const navigate = useNavigate();
   const { register: registerUser } = useAuth();
 
-  // LEARNING: More Complex Form State
   // Register requires more fields than login
   const [formData, setFormData] = useState({
     username: '',
@@ -46,11 +43,26 @@ export function Register() {
   const [error, setError] = useState('');
 
   /**
+   * LEARNING: Real-time Password Strength Validation
+   * Matches backend requirements exactly
+   */
+  const passwordRequirements = useMemo(() => {
+    const password = formData.password;
+    return {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[^a-zA-Z0-9]/.test(password),
+    };
+  }, [formData.password]);
+
+  const isPasswordValid = useMemo(() => {
+    return Object.values(passwordRequirements).every(Boolean);
+  }, [passwordRequirements]);
+
+  /**
    * LEARNING: Client-Side Validation
-   * 
-   * Validate form before sending to server
-   * - Prevents unnecessary API calls
-   * - Provides instant feedback to user
    * 
    * @returns true if valid, false if errors
    */
@@ -76,11 +88,11 @@ export function Register() {
       errors.email = 'Email is invalid';
     }
 
-    // Password validation
+    // Password validation - Match backend requirements
     if (!formData.password) {
       errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (!isPasswordValid) {
+      errors.password = 'Please meet all password requirements';
     }
 
     // Password confirmation
@@ -111,23 +123,18 @@ export function Register() {
     setLoading(true);
 
     try {
-      // LEARNING: API Call to Register Endpoint
-      // - Sends username, email, password to backend
-      // - Backend creates user and returns JWT token
       await registerUser(
         formData.username,
         formData.email,
         formData.password
       );
       
-      // Success! Navigate to chat
-      navigate('/chat');
+      // Success! Redirect to check-email page with email in state
+      navigate('/check-email', { state: { email: formData.email } });
       
     } catch (err: any) {
-      // LEARNING: Backend Error Messages
-      // - Backend might return specific errors (email taken, etc.)
       setError(
-        err.response?.data?.message || 
+        err.response?.data?.error || 
         'Registration failed. Please try again.'
       );
     } finally {
@@ -234,6 +241,35 @@ export function Register() {
             required
           />
 
+          {/* Password Strength Indicator */}
+          {formData.password && (
+            <div className="p-4 bg-nature-50 dark:bg-nature-900/20 border-2 border-nature-200 dark:border-nature-800 rounded-2xl space-y-2">
+              <p className="text-sm font-semibold text-nature-bark dark:text-nature-stone mb-2">
+                Password Requirements:
+              </p>
+              <PasswordRequirement 
+                met={passwordRequirements.minLength}
+                text="At least 8 characters"
+              />
+              <PasswordRequirement 
+                met={passwordRequirements.hasUppercase}
+                text="One uppercase letter (A-Z)"
+              />
+              <PasswordRequirement 
+                met={passwordRequirements.hasLowercase}
+                text="One lowercase letter (a-z)"
+              />
+              <PasswordRequirement 
+                met={passwordRequirements.hasNumber}
+                text="One number (0-9)"
+              />
+              <PasswordRequirement 
+                met={passwordRequirements.hasSpecial}
+                text="One special character (!@#$%^&*)"
+              />
+            </div>
+          )}
+
           <Input
             label="Confirm Password"
             type="password"
@@ -271,6 +307,34 @@ export function Register() {
 }
 
 /**
+ * PASSWORD REQUIREMENT COMPONENT
+ * Shows checkmark or X based on whether requirement is met
+ */
+interface PasswordRequirementProps {
+  met: boolean;
+  text: string;
+}
+
+function PasswordRequirement({ met, text }: PasswordRequirementProps) {
+  return (
+    <div className="flex items-center gap-2">
+      {met ? (
+        <Check size={16} className="text-grass-600 dark:text-grass-400 flex-shrink-0" />
+      ) : (
+        <X size={16} className="text-nature-400 dark:text-nature-600 flex-shrink-0" />
+      )}
+      <span className={`text-sm ${
+        met 
+          ? 'text-grass-600 dark:text-grass-400 font-semibold' 
+          : 'text-nature-500 dark:text-nature-500'
+      }`}>
+        {text}
+      </span>
+    </div>
+  );
+}
+
+/**
  * KEY DIFFERENCES FROM LOGIN:
  * 
  * 1. More Form Fields - username, email, password, confirmPassword
@@ -278,5 +342,6 @@ export function Register() {
  * 3. Field-Specific Errors - Each input gets its own error message
  * 4. Password Matching - Ensures confirmPassword matches password
  * 5. Real-time Error Clearing - Errors disappear as user types
+ * 6. Real-time Password Strength - Live validation matching backend requirements
  */
 

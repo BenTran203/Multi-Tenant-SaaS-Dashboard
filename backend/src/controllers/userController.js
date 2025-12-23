@@ -108,25 +108,40 @@ export const updateProfile = async (req, res) => {
 };
 
 /**
- * Delete User Account (Optional)
- *
- * LOGIC:
+ * Delete User Account
  */
-
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
+
+    // Check if user owns any servers
+    const ownedServers = await prisma.server.findMany({
+      where: { ownerId: userId },
+      select: { id: true, name: true },
+    });
+
+    if (ownedServers.length > 0) {
+      return res.status(400).json({
+        error: "Cannot delete account while owning servers",
+        errorType: "OWNS_SERVERS",
+        ownedServers: ownedServers,
+        message: "Please transfer ownership or delete your servers before deleting your account",
+      });
+    }
+
+    //Delete user (messages will remain with userId reference)
     await prisma.user.delete({
       where: { id: userId },
     });
+
     res.json({
       message: "Account deleted successfully",
     });
   } catch (error) {
-    console.log('Unable to delete account:', error)
+    console.error('Unable to delete account:', error);
     res.status(500).json({
-        error: "Faild to delete account",
-        details: error.message
+      error: "Failed to delete account",
+      details: error.message,
     });
-   }
+  }
 };

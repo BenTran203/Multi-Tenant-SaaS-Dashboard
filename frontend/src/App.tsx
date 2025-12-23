@@ -15,6 +15,9 @@ import { ResetPassword } from './pages/ResetPassword';
 import { ForgotPass } from './pages/Forgotpass';
 import { Profile } from './pages/Profile';
 import { ServerSettings } from './pages/ServerSettings';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { ResendVerification } from './pages/ResendVerification';
+import { CheckEmail } from './pages/CheckEmail';
 
 /**
  * PROTECTED ROUTE COMPONENT
@@ -114,6 +117,18 @@ function AppRoutes() {
             <ResetPassword />
           </PublicRoute>
         }
+      />
+      <Route
+        path="/verify-email"
+        element={<VerifyEmail />}
+      />
+      <Route
+        path="/resend-verification"
+        element={<ResendVerification />}
+      />
+      <Route
+        path="/check-email"
+        element={<CheckEmail />}
       />
 
       {/* LEARNING: Protected Routes (require authentication) */}
